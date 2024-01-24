@@ -11,34 +11,32 @@ const ClassCode = struct {
     interface: u8,
 };
 
-const IOPortAddr = packed struct {
-    enable: u1 = 1,
-    _reservation1: u7 = 0,
-    bus: u8,
-    device: u5,
-    function: u3,
-    reg_offset: u6,
-    _reservation2: u2 = 0,
+fn readVendorID(bus: u8, device: u8, function: u8) u16 {
+    return @intCast(readIOAddrSpace(makeIOPortAddr(bus, device, function, 0)) & 0xffff);
+}
 
-    pub fn toInt(self: @This()) u32 {
-        return @as(u32, @intCast(self.enable)) << 31 | @as(u32, @intCast(self.bus)) << 16 | @as(u32, @intCast(self.device)) << 11 | @as(u32, @intCast(self.function)) << 8 | @as(u32, @intCast(self.reg_offset)) << 2;
-    }
-};
+fn readHeaderType(bus: u8, device: u8, function: u8) u8 {
+    return @intCast(readIOAddrSpace(makeIOPortAddr(bus, device, function, 0x0c)) >> 16 & 0xffff);
+}
+
+fn isSingleFunctionDevice(header_type: u8) bool {
+    return (header_type & 0b1000_0000) == 0;
+}
+
+fn makeIOPortAddr(bus: u8, device: u8, function: u8, reg_offset: u8) u32 {
+    return 1 << 31 | @as(u32, @intCast(bus)) << 16 | @as(u32, @intCast(device)) << 11 | @as(u32, @intCast(function)) << 8 | (reg_offset & 0b1111_1100);
+}
 
 const config_addr_reg_addr: u16 = 0xcf8;
 const config_data_reg_addr: u16 = 0xcfc;
 
-pub fn readVendorID(addr: IOPortAddr) u16 {
-    return @intCast(readIOAddrSpace(addr) & 0xffff);
-}
-
-fn writeIOAddrSpace(addr: IOPortAddr, data: u32) void {
-    IOOut32(config_addr_reg_addr, addr.toInt());
+fn writeIOAddrSpace(addr: u32, data: u32) void {
+    IOOut32(config_addr_reg_addr, addr);
     IOOut32(config_data_reg_addr, data);
 }
 
-fn readIOAddrSpace(addr: IOPortAddr) u32 {
-    IOOut32(config_addr_reg_addr, addr.toInt());
+fn readIOAddrSpace(addr: u32) u32 {
+    IOOut32(config_addr_reg_addr, addr);
     return IOIn32(config_data_reg_addr);
 }
 
