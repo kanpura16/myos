@@ -6,15 +6,10 @@ const graphics = @import("graphics.zig");
 var cursor_x: u32 = 0;
 var cursor_y: u32 = 0;
 
-pub fn print(asciis: []const u8) void {
-    for (asciis) |ascii| {
-        if (ascii == '\n') {
-            newLine();
-        } else {
-            graphics.drawAscii(ascii, cursor_x, cursor_y);
-            cursor_x += 8;
-        }
-    }
+pub fn clearConsole() void {
+    cursor_x = 0;
+    cursor_y = 0;
+    graphics.drawQuadrangle(0, 0, boot_info.frame_buf_conf.horizon_res, boot_info.frame_buf_conf.vertical_res, graphics.bg_color);
 }
 
 pub fn printf(comptime fmt: []const u8, args: anytype) void {
@@ -24,10 +19,15 @@ pub fn printf(comptime fmt: []const u8, args: anytype) void {
     print(asciis);
 }
 
-pub fn clearConsole() void {
-    cursor_x = 0;
-    cursor_y = 0;
-    graphics.drawQuadrangle(0, 0, boot_info.frame_buf_conf.horizon_res, boot_info.frame_buf_conf.vertical_res, graphics.bg_color);
+pub fn print(asciis: []const u8) void {
+    for (asciis) |ascii| {
+        if (ascii == '\n') {
+            newLine();
+        } else {
+            graphics.drawAscii(ascii, cursor_x, cursor_y);
+            cursor_x += 8;
+        }
+    }
 }
 
 fn newLine() void {

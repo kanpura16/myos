@@ -17,6 +17,12 @@ pub fn initGraphics(frame_buf_conf: *const boot_info.FrameBufConf) void {
     drawPixel = if (frame_buf_conf.pixel_format == .RGB8BitPerColor) &drawRGBPixel else &drawBGRPixel;
 }
 
+pub fn drawAsciis(asciis: []const u8, x: u32, y: u32) void {
+    for (asciis, 0..) |ascii, i| {
+        drawAscii(ascii, @intCast(x + i * 8), y);
+    }
+}
+
 pub fn drawAscii(ascii: u8, x: u32, y: u32) void {
     const font_data = font.getFontDataFromAscii(ascii);
     var py: u8 = 0;
@@ -27,12 +33,6 @@ pub fn drawAscii(ascii: u8, x: u32, y: u32) void {
                 drawPixel(x + px, y + py, fg_color);
             }
         }
-    }
-}
-
-pub fn drawAsciis(asciis: []const u8, x: u32, y: u32) void {
-    for (asciis, 0..) |ascii, i| {
-        drawAscii(ascii, @intCast(x + i * 8), y);
     }
 }
 
