@@ -19,18 +19,26 @@ const IOPortAddr = packed struct {
     function: u3,
     reg_offset: u6,
     _reservation2: u2 = 0,
+
+    pub fn toInt(self: @This()) u32 {
+        return @as(u32, @intCast(self.enable)) << 31 | @as(u32, @intCast(self.bus)) << 16 | @as(u32, @intCast(self.device)) << 11 | @as(u32, @intCast(self.function)) << 8 | @as(u32, @intCast(self.reg_offset)) << 2;
+    }
 };
 
 const config_addr_reg_addr: u16 = 0xcf8;
 const config_data_reg_addr: u16 = 0xcfc;
 
-fn writeIOAddrSpace(addr: u32, data: u32) void {
-    IOOut32(config_addr_reg_addr, addr);
+pub fn readVendorID(addr: IOPortAddr) u16 {
+    return @intCast(readIOAddrSpace(addr) & 0xffff);
+}
+
+fn writeIOAddrSpace(addr: IOPortAddr, data: u32) void {
+    IOOut32(config_addr_reg_addr, addr.toInt());
     IOOut32(config_data_reg_addr, data);
 }
 
-fn readIOAddrSpace(addr: u32) u32 {
-    IOOut32(config_addr_reg_addr, addr);
+fn readIOAddrSpace(addr: IOPortAddr) u32 {
+    IOOut32(config_addr_reg_addr, addr.toInt());
     return IOIn32(config_data_reg_addr);
 }
 
