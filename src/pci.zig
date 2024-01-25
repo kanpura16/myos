@@ -1,7 +1,7 @@
 const Device = struct {
     bus: u8,
-    device: u5,
-    function: u3,
+    device: u8,
+    function: u8,
     class_code: ClassCode,
 };
 
@@ -11,12 +11,77 @@ const ClassCode = struct {
     interface: u8,
 };
 
-fn readVendorID(bus: u8, device: u8, function: u8) u16 {
+pub var devices: [32]Device = undefined;
+pub var num_device: u8 = 0;
+
+pub fn scanAllBuses() void {
+    if (isSingleFunctionDevice(readHeaderType(0, 0, 0))) {
+        scanBus(0);
+    } else {
+        var function: u8 = 0;
+        while (function < 8) : (function += 1) {
+            if (readVendorID(0, 0, function) == 0xffff) continue;
+            scanBus(function);
+        }
+    }
+}
+
+fn scanBus(bus: u8) void {
+    var device: u8 = 0;
+    while (device < 32) : (device += 1) {
+        scanDevice(bus, device);
+    }
+}
+
+fn scanDevice(bus: u8, device: u8) void {
+    var function: u8 = 0;
+    if (readVendorID(bus, device, function) == 0xffff) return;
+    addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
+    scanFunction(bus, device, function);
+
+    if (!isSingleFunctionDevice(readHeaderType(bus, device, function))) {
+        while (function < 8) : (function += 1) {
+            if (readVendorID(bus, device, function) == 0xffff) continue;
+            addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
+            scanFunction(bus, device, function);
+        }
+    }
+}
+
+fn scanFunction(bus: u8, device: u8, function: u8) void {
+    const class_code = readClassCode(bus, device, function);
+    if (class_code.base == 6 and class_code.sub == 4) {
+        // PCI-to-PCI bridge
+        return scanBus(readSecondaryBus(bus, device, function));
+    }
+}
+
+fn addDevice(device: Device) void {
+    if (num_device == devices.len) return;
+
+    devices[num_device] = device;
+    num_device += 1;
+}
+
+pub fn readVendorID(bus: u8, device: u8, function: u8) u16 {
     return @intCast(readIOAddrSpace(makeIOPortAddr(bus, device, function, 0)) & 0xffff);
 }
 
 fn readHeaderType(bus: u8, device: u8, function: u8) u8 {
-    return @intCast(readIOAddrSpace(makeIOPortAddr(bus, device, function, 0x0c)) >> 16 & 0xffff);
+    return @intCast(readIOAddrSpace(makeIOPortAddr(bus, device, function, 0x0c)) >> 16 & 0xff);
+}
+
+fn readClassCode(bus: u8, device: u8, function: u8) ClassCode {
+    const class_code: u32 = readIOAddrSpace(makeIOPortAddr(bus, device, function, 8));
+    return .{
+        .base = @intCast(class_code >> 24 & 0xff),
+        .sub = @intCast(class_code >> 16 & 0xff),
+        .interface = @intCast(class_code >> 8 & 0xff),
+    };
+}
+
+fn readSecondaryBus(bus: u8, device: u8, function: u8) u8 {
+    return @intCast(readIOAddrSpace(makeIOPortAddr(bus, device, function, 0x18)) >> 8 & 0xff);
 }
 
 fn isSingleFunctionDevice(header_type: u8) bool {

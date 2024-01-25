@@ -1,5 +1,4 @@
 pub var frame_buf_conf: *const FrameBufConf = undefined;
-frame_buf: *const FrameBufConf,
 
 pub const FrameBufConf = struct {
     frame_buf: [*]u8,
