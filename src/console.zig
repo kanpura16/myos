@@ -1,6 +1,7 @@
 const std = @import("std");
 
 const boot_info = @import("boot_info.zig");
+const font = @import("font.zig");
 const graphics = @import("graphics.zig");
 
 var cursor_x: u32 = 0;
@@ -25,21 +26,25 @@ pub fn print(asciis: []const u8) void {
             newLine();
         } else {
             graphics.drawAscii(ascii, cursor_x, cursor_y);
-            cursor_x += 8;
+            cursor_x += font.char_width;
         }
     }
 }
 
 fn newLine() void {
     cursor_x = 0;
-    if (cursor_y + 16 * 2 <= boot_info.frame_buf_conf.vertical_res) {
-        cursor_y += 16;
+    if (cursor_y + font.char_height * 2 <= boot_info.frame_buf_conf.vertical_res) {
+        cursor_y += font.char_height;
     } else {
         // scroll the screen
-        const source: [*]u8 = @ptrCast(&boot_info.frame_buf_conf.frame_buf[4 * (boot_info.frame_buf_conf.pixels_per_row * 16)]);
-        const len = 4 * (boot_info.frame_buf_conf.pixels_per_row * (boot_info.frame_buf_conf.vertical_res - 16));
-        for (boot_info.frame_buf_conf.frame_buf[0..len], source) |*d, s| d.* = s;
+        var y: u32 = 0;
+        while (y < boot_info.frame_buf_conf.vertical_res - font.char_height) : (y += 1) {
+            var x: u32 = 0;
+            while (x < boot_info.frame_buf_conf.horizon_res) : (x += 1) {
+                @memcpy(graphics.calcPixelAddr(x, y)[0..3], graphics.calcPixelAddr(x, y + font.char_height)[0..3]);
+            }
+        }
 
-        graphics.drawQuadrangle(0, boot_info.frame_buf_conf.vertical_res - 16, boot_info.frame_buf_conf.horizon_res, 16, graphics.bg_color);
+        graphics.drawQuadrangle(0, boot_info.frame_buf_conf.vertical_res - font.char_height, boot_info.frame_buf_conf.horizon_res, font.char_height, graphics.bg_color);
     }
 }

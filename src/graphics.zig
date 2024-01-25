@@ -19,7 +19,7 @@ pub fn initGraphics(frame_buf_conf: *const boot_info.FrameBufConf) void {
 
 pub fn drawAsciis(asciis: []const u8, x: u32, y: u32) void {
     for (asciis, 0..) |ascii, i| {
-        drawAscii(ascii, @intCast(x + i * 8), y);
+        drawAscii(ascii, @intCast(x + i * font.char_width), y);
     }
 }
 
@@ -30,7 +30,11 @@ pub fn drawAscii(ascii: u8, x: u32, y: u32) void {
         var px: u8 = 0;
         while (px < 8) : (px += 1) {
             if ((font_data[py] << @intCast(px)) >= 0b1000_0000) {
-                drawPixel(x + px, y + py, fg_color);
+                drawPixel(x + px * 2, y + py * 2, fg_color);
+                drawPixel(x + px * 2 + 1, y + py * 2, fg_color);
+
+                drawPixel(x + px * 2, y + py * 2 + 1, fg_color);
+                drawPixel(x + px * 2 + 1, y + py * 2 + 1, fg_color);
             }
         }
     }
@@ -60,15 +64,19 @@ pub fn drawColorfulBG() void {
     }
 }
 
+pub fn calcPixelAddr(x: u32, y: u32) [*]u8 {
+    return @ptrCast(&boot_info.frame_buf_conf.frame_buf[(boot_info.frame_buf_conf.pixels_per_row * y + x) * 4]);
+}
+
 fn drawRGBPixel(x: u32, y: u32, color: Color) void {
-    var p: *[4]u8 = @ptrCast(&boot_info.frame_buf_conf.frame_buf[4 * (y * boot_info.frame_buf_conf.pixels_per_row + x)]);
+    var p: [*]u8 = calcPixelAddr(x, y);
     p[0] = color.red;
     p[1] = color.green;
     p[2] = color.blue;
 }
 
 fn drawBGRPixel(x: u32, y: u32, color: Color) void {
-    var p: *[4]u8 = @ptrCast(&boot_info.frame_buf_conf.frame_buf[4 * (y * boot_info.frame_buf_conf.pixels_per_row + x)]);
+    var p: [*]u8 = calcPixelAddr(x, y);
     p[0] = color.blue;
     p[1] = color.green;
     p[2] = color.red;
