@@ -24,6 +24,12 @@ pub fn print(asciis: []const u8) void {
     for (asciis) |ascii| {
         if (ascii == '\n') {
             newLine();
+        } else if (ascii == '\t') {
+            print("    ");
+        } else if (cursor_x + font.char_width > boot_info.frame_buf_conf.horizon_res) {
+            newLine();
+            graphics.drawAscii(ascii, cursor_x, cursor_y);
+            cursor_x += font.char_width;
         } else {
             graphics.drawAscii(ascii, cursor_x, cursor_y);
             cursor_x += font.char_width;
