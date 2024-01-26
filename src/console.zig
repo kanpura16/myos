@@ -44,11 +44,8 @@ fn newLine() void {
     } else {
         // scroll the screen
         var y: u32 = 0;
-        while (y < boot_info.frame_buf_conf.vertical_res - font.char_height) : (y += 1) {
-            var x: u32 = 0;
-            while (x < boot_info.frame_buf_conf.horizon_res) : (x += 1) {
-                @memcpy(graphics.calcPixelAddr(x, y)[0..3], graphics.calcPixelAddr(x, y + font.char_height)[0..3]);
-            }
+        while (y < boot_info.frame_buf_conf.vertical_res - font.char_height) : (y += 2) {
+            @memcpy(graphics.calcPixelAddr(0, y), graphics.calcPixelAddr(0, y + font.char_height)[0 .. boot_info.frame_buf_conf.pixels_per_row * 2 * 4]);
         }
 
         graphics.drawQuadrangle(0, boot_info.frame_buf_conf.vertical_res - font.char_height, boot_info.frame_buf_conf.horizon_res, font.char_height, graphics.bg_color);
