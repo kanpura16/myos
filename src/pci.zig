@@ -1,3 +1,5 @@
+const console = @import("console.zig");
+
 const Device = struct {
     bus: u8,
     device: u8,
@@ -12,7 +14,7 @@ const ClassCode = struct {
 };
 
 pub var devices: [32]Device = undefined;
-pub var num_device: u8 = 0;
+var num_device: u8 = 0;
 
 pub fn scanAllBuses() void {
     if (isSingleFunctionDevice(readHeaderType(0, 0, 0))) {
@@ -57,7 +59,9 @@ fn scanFunction(bus: u8, device: u8, function: u8) void {
 }
 
 fn addDevice(device: Device) void {
-    if (num_device == devices.len) return;
+    if (num_device == devices.len) {
+        console.print("pci.addDevice(): pci.devices is full");
+    }
 
     devices[num_device] = device;
     num_device += 1;
@@ -110,15 +114,13 @@ extern fn IOIn32(addr: u16) u32;
 
 comptime {
     asm (
-    // fn IOOut32(addr: u16, data: u32) void;
         \\IOOut32:
         // %dx = addr;
         \\  mov %di, %dx
         // %eax = data;
         \\  mov %esi, %eax
         \\  out %eax, %dx
-
-        // fn IOIn32(addr: u16) u32;
+        \\
         \\IOIn32:
         // %dx = addr
         \\  mov %di, %dx

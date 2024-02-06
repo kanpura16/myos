@@ -24,7 +24,7 @@ pub fn drawAsciis(asciis: []const u8, x: u32, y: u32) void {
 }
 
 pub fn drawAscii(ascii: u8, x: u32, y: u32) void {
-    const font_data = font.getFontDataFromAscii(ascii);
+    const font_data = font.getFontFromAscii(ascii);
     var py: u8 = 0;
     while (py < 16) : (py += 1) {
         var px: u8 = 0;
