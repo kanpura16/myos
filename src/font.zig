@@ -1,7 +1,7 @@
 pub const char_width = 16;
 pub const char_height = 32;
 
-pub fn getFontDataFromAscii(ascii: u8) [16]u8 {
+pub fn getFontFromAscii(ascii: u8) [16]u8 {
     if (ascii <= 127) {
         return fonts[ascii];
     }

@@ -17,7 +17,7 @@ pub var devices: [32]Device = undefined;
 var num_device: u8 = 0;
 
 pub fn scanAllBuses() void {
-    if (isSingleFunctionDevice(readHeaderType(0, 0, 0))) {
+    if (isSingleFuncDev(readHeaderType(0, 0, 0))) {
         scanBus(0);
     } else {
         var function: u8 = 0;
@@ -41,7 +41,7 @@ fn scanDevice(bus: u8, device: u8) void {
     addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
     scanFunction(bus, device, function);
 
-    if (!isSingleFunctionDevice(readHeaderType(bus, device, function))) {
+    if (!isSingleFuncDev(readHeaderType(bus, device, function))) {
         while (function < 8) : (function += 1) {
             if (readVendorID(bus, device, function) == 0xffff) continue;
             addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
@@ -88,7 +88,7 @@ fn readSecondaryBus(bus: u8, device: u8, function: u8) u8 {
     return @intCast(readIOAddrSpace(makeIOPortAddr(bus, device, function, 0x18)) >> 8 & 0xff);
 }
 
-fn isSingleFunctionDevice(header_type: u8) bool {
+fn isSingleFuncDev(header_type: u8) bool {
     return (header_type & 0b1000_0000) == 0;
 }
 
