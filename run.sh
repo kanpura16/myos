@@ -19,8 +19,8 @@ sudo umount mnt
 
 if [ "$1" = "debug" ]; then
     qemu-system-x86_64 -m 1G -s -S -bios /usr/share/ovmf/OVMF.fd \
-        -drive file=disk.img,if=ide,media=disk,index=0,format=raw -monitor stdio --no-reboot
+        -drive file=disk.img,if=ide,media=disk,index=0,format=raw -device qemu-xhci -monitor stdio --no-reboot
 else
     qemu-system-x86_64 -m 1G -bios /usr/share/ovmf/OVMF.fd \
-        -drive file=disk.img,if=ide,media=disk,index=0,format=raw -monitor stdio --no-reboot
+        -drive file=disk.img,if=ide,media=disk,index=0,format=raw -device qemu-xhci -monitor stdio --no-reboot
 fi

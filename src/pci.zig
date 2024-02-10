@@ -1,6 +1,6 @@
 const console = @import("console.zig");
 
-const Device = struct {
+pub const Device = struct {
     bus: u8,
     device: u8,
     function: u8,
@@ -71,11 +71,7 @@ pub fn readVendorId(bus: u8, device: u8, function: u8) u16 {
     return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0)) & 0xffff);
 }
 
-fn readHeaderType(bus: u8, device: u8, function: u8) u8 {
-    return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x0c)) >> 16 & 0xff);
-}
-
-fn readClassCode(bus: u8, device: u8, function: u8) ClassCode {
+pub fn readClassCode(bus: u8, device: u8, function: u8) ClassCode {
     const class_code: u32 = readIOAddrSpace(makeIoPortAddr(bus, device, function, 8));
     return .{
         .base = @intCast(class_code >> 24 & 0xff),
@@ -84,12 +80,22 @@ fn readClassCode(bus: u8, device: u8, function: u8) ClassCode {
     };
 }
 
-fn readSecondaryBus(bus: u8, device: u8, function: u8) u8 {
-    return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x18)) >> 8 & 0xff);
+pub fn readBar(bus: u8, device: u8, function: u8) u64 {
+    const bar0: u64 = readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x10));
+    const bar1: u64 = readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x14));
+    return bar1 << 32 | bar0;
+}
+
+fn readHeaderType(bus: u8, device: u8, function: u8) u8 {
+    return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x0c)) >> 16 & 0xff);
 }
 
 fn isSingleFuncDev(header_type: u8) bool {
     return (header_type & 0b1000_0000) == 0;
+}
+
+fn readSecondaryBus(bus: u8, device: u8, function: u8) u8 {
+    return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x18)) >> 8 & 0xff);
 }
 
 fn makeIoPortAddr(bus: u8, device: u8, function: u8, reg_offset: u8) u32 {
