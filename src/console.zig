@@ -15,7 +15,6 @@ pub fn clearConsole() void {
 
 pub fn printf(comptime fmt: []const u8, args: anytype) void {
     var buf: [128]u8 = undefined;
-    @memset(&buf, 0);
     const asciis = std.fmt.bufPrint(&buf, fmt, args) catch unreachable;
     print(asciis);
 }

@@ -98,7 +98,6 @@ pub fn main() uefi.Status {
 
     const num_pages = (kernel_last_addr - kernel_first_addr + 4095) / 4096;
     status = bs.allocatePages(.AllocateAddress, .LoaderData, num_pages, @as(*[*]align(4096) u8, @ptrCast(&kernel_first_addr)));
-    // status = bs.allocatePages(.AllocateAddress, .LoaderData, num_pages, @ptrCast(&kernel_first_addr));
     if (status != .Success) {
         printf("failed to allocate pages for kernel: {}\r\n", .{status});
         return status;
@@ -188,7 +187,6 @@ pub fn main() uefi.Status {
 
 fn printf(comptime format: []const u8, args: anytype) void {
     var buf: [256]u8 = undefined;
-    @memset(&buf, 0);
     const asciis = std.fmt.bufPrint(&buf, format, args) catch unreachable;
     for (asciis) |ascii| {
         con_out.outputString(&[_:0]u16{ ascii, 0 }).err() catch unreachable;
