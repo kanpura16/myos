@@ -2,4 +2,5 @@
 /zig-out
 /mnt
 disk.img
+qemu_trace.txt
 

@@ -18,9 +18,9 @@ sudo cp zig-out/bin/kernel.elf mnt
 sudo umount mnt
 
 if [ "$1" = "debug" ]; then
-    qemu-system-x86_64 -m 1G -s -S -bios /usr/share/ovmf/OVMF.fd \
-        -drive file=disk.img,if=ide,media=disk,index=0,format=raw -device qemu-xhci -monitor stdio --no-reboot
+    qemu-system-x86_64 -m 2G -s -S -bios /usr/share/ovmf/OVMF.fd \
+        -drive file=disk.img,if=ide,media=disk,index=0,format=raw -device qemu-xhci -device usb-kbd -monitor stdio --no-reboot --trace events=qemu_trace.txt
 else
-    qemu-system-x86_64 -m 1G -bios /usr/share/ovmf/OVMF.fd \
-        -drive file=disk.img,if=ide,media=disk,index=0,format=raw -device qemu-xhci -monitor stdio --no-reboot
+    qemu-system-x86_64 -m 2G -bios /usr/share/ovmf/OVMF.fd \
+        -drive file=disk.img,if=ide,media=disk,index=0,format=raw -device qemu-xhci -device usb-kbd -monitor stdio --no-reboot --trace events=qemu_trace.txt
 fi
