@@ -67,7 +67,7 @@ pub fn main() uefi.Status {
         return status;
     }
 
-    const elf_header = elf.Header.parse(elf_header_buf[0..@sizeOf(elf.Ehdr)]) catch |err| {
+    const elf_header = elf.Header.parse(@ptrCast(elf_header_buf)) catch |err| {
         printf("failed to parse kernel file header: {}\r\n", .{err});
         return .LoadError;
     };
@@ -88,16 +88,16 @@ pub fn main() uefi.Status {
     }) |program_header| {
         if (program_header.p_type != elf.PT_LOAD) continue;
 
-        if (program_header.p_vaddr < kernel_first_addr) {
-            kernel_first_addr = program_header.p_vaddr;
+        if (program_header.p_paddr < kernel_first_addr) {
+            kernel_first_addr = program_header.p_paddr;
         }
-        if (program_header.p_vaddr + program_header.p_memsz > kernel_last_addr) {
-            kernel_last_addr = program_header.p_vaddr + program_header.p_memsz;
+        if (program_header.p_paddr + program_header.p_memsz > kernel_last_addr) {
+            kernel_last_addr = program_header.p_paddr + program_header.p_memsz;
         }
     }
 
     const num_pages = (kernel_last_addr - kernel_first_addr + 4095) / 4096;
-    status = bs.allocatePages(.AllocateAddress, .LoaderData, num_pages, @as(*[*]align(4096) u8, @ptrCast(&kernel_first_addr)));
+    status = bs.allocatePages(.AllocateAddress, .LoaderData, num_pages, @ptrCast(&kernel_first_addr));
     if (status != .Success) {
         printf("failed to allocate pages for kernel: {}\r\n", .{status});
         return status;
@@ -116,7 +116,7 @@ pub fn main() uefi.Status {
             printf("failed to set kernel file read position: {}\r\n", .{status});
             return status;
         }
-        status = kernel_file.read(@constCast(&program_header.p_filesz), @ptrFromInt(program_header.p_vaddr));
+        status = kernel_file.read(@constCast(&program_header.p_filesz), @ptrFromInt(program_header.p_paddr));
         if (status != .Success) {
             printf("failed to load kernel to memory: {}\r\n", .{status});
             return status;
@@ -125,7 +125,7 @@ pub fn main() uefi.Status {
         // initialize .bss section with 0
         const zero_fill_count = program_header.p_memsz - program_header.p_filesz;
         if (zero_fill_count > 0) {
-            bs.setMem(@ptrFromInt(program_header.p_vaddr + program_header.p_filesz), zero_fill_count, 0);
+            bs.setMem(@ptrFromInt(program_header.p_paddr + program_header.p_filesz), zero_fill_count, 0);
         }
     }
 
@@ -189,6 +189,6 @@ fn printf(comptime format: []const u8, args: anytype) void {
     var buf: [256]u8 = undefined;
     const asciis = std.fmt.bufPrint(&buf, format, args) catch unreachable;
     for (asciis) |ascii| {
-        con_out.outputString(&[_:0]u16{ ascii, 0 }).err() catch unreachable;
+        con_out.outputString(&[_:0]u16{@intCast(ascii)}).err() catch unreachable;
     }
 }

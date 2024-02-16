@@ -1,14 +1,14 @@
 const boot_info = @import("boot_info.zig");
 const font = @import("font.zig");
 
-const Color = struct {
+pub const Color = struct {
     red: u8,
     green: u8,
     blue: u8,
-};
 
-pub const fg_color = Color{ .red = 0x9E, .green = 0xCE, .blue = 0x6A };
-pub const bg_color = Color{ .red = 16, .green = 16, .blue = 16 };
+    pub const fg_color = .{ .red = 0x9E, .green = 0xCE, .blue = 0x6A };
+    pub const bg_color = .{ .red = 16, .green = 16, .blue = 16 };
+};
 
 var drawPixel: *const fn (u32, u32, Color) void = undefined;
 
@@ -30,11 +30,11 @@ pub fn drawAscii(ascii: u8, x: u32, y: u32) void {
         var px: u8 = 0;
         while (px < 8) : (px += 1) {
             if ((font_data[py] << @intCast(px)) >= 0b1000_0000) {
-                drawPixel(x + px * 2, y + py * 2, fg_color);
-                drawPixel(x + px * 2 + 1, y + py * 2, fg_color);
+                drawPixel(x + px * 2, y + py * 2, Color.fg_color);
+                drawPixel(x + px * 2 + 1, y + py * 2, Color.fg_color);
 
-                drawPixel(x + px * 2, y + py * 2 + 1, fg_color);
-                drawPixel(x + px * 2 + 1, y + py * 2 + 1, fg_color);
+                drawPixel(x + px * 2, y + py * 2 + 1, Color.fg_color);
+                drawPixel(x + px * 2 + 1, y + py * 2 + 1, Color.fg_color);
             }
         }
     }

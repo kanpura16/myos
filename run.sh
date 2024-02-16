@@ -7,7 +7,7 @@ else
 fi
 
 rm -f disk.img
-qemu-img create -f raw disk.img 16M
+qemu-img create -f raw disk.img 32M
 mkfs.fat disk.img
 
 mkdir -p mnt

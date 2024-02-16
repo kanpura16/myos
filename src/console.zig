@@ -10,7 +10,7 @@ var cursor_y: u32 = 0;
 pub fn clearConsole() void {
     cursor_x = 0;
     cursor_y = 0;
-    graphics.drawQuadrangle(0, 0, boot_info.frame_buf_conf.horizon_res, boot_info.frame_buf_conf.vertical_res, graphics.bg_color);
+    graphics.drawQuadrangle(0, 0, boot_info.frame_buf_conf.horizon_res, boot_info.frame_buf_conf.vertical_res, graphics.Color.bg_color);
 }
 
 pub fn printf(comptime fmt: []const u8, args: anytype) void {
@@ -47,6 +47,6 @@ fn newLine() void {
             @memcpy(graphics.calcPixelAddr(0, y), graphics.calcPixelAddr(0, y + font.char_height)[0 .. boot_info.frame_buf_conf.pixels_per_row * font.char_height * 4]);
         }
 
-        graphics.drawQuadrangle(0, boot_info.frame_buf_conf.vertical_res - font.char_height, boot_info.frame_buf_conf.horizon_res, font.char_height, graphics.bg_color);
+        graphics.drawQuadrangle(0, boot_info.frame_buf_conf.vertical_res - font.char_height, boot_info.frame_buf_conf.horizon_res, font.char_height, graphics.Color.bg_color);
     }
 }
