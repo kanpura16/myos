@@ -6,9 +6,20 @@ const graphics = @import("graphics.zig");
 const pci = @import("pci.zig");
 const xhci = @import("driver/usb/xhci/xhci.zig");
 
+var kernel_stack: [1024 * 1024]u8 align(16) = undefined;
+
 export fn kernelMain(frame_buf_conf: *const boot_info.FrameBufConf) noreturn {
+    asm volatile (
+        \\lea 0x100000(%[kernel_stack]), %rsp
+        \\mov %rsp, %rbp
+        :
+        : [kernel_stack] "{rax}" (&kernel_stack),
+        : "rsp", "rbp"
+    );
+
     graphics.initGraphics(frame_buf_conf);
     console.clearConsole();
+    console.printf("{x}\n", .{@intFromPtr(&kernel_stack) + 1024 * 1024});
     pci.scanAllBuses();
     xhci.initXhci();
 

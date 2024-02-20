@@ -13,7 +13,7 @@ pub const Color = struct {
 var drawPixel: *const fn (u32, u32, Color) void = undefined;
 
 pub fn initGraphics(frame_buf_conf: *const boot_info.FrameBufConf) void {
-    boot_info.frame_buf_conf = frame_buf_conf;
+    boot_info.frame_buf_conf = frame_buf_conf.*;
     drawPixel = if (frame_buf_conf.pixel_format == .RGB8BitPerColor) &drawRGBPixel else &drawBGRPixel;
 }
 
