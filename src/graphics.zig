@@ -10,13 +10,6 @@ pub const Color = struct {
     pub const bg_color = .{ .red = 16, .green = 16, .blue = 16 };
 };
 
-var drawPixel: *const fn (u32, u32, Color) void = undefined;
-
-pub fn initGraphics(frame_buf_conf: *const boot_info.FrameBufConf) void {
-    boot_info.frame_buf_conf = frame_buf_conf.*;
-    drawPixel = if (frame_buf_conf.pixel_format == .RGB8BitPerColor) &drawRGBPixel else &drawBGRPixel;
-}
-
 pub fn drawAsciis(asciis: []const u8, x: u32, y: u32) void {
     for (asciis, 0..) |ascii, i| {
         drawAscii(ascii, @intCast(x + i * font.char_width), y);
@@ -29,7 +22,8 @@ pub fn drawAscii(ascii: u8, x: u32, y: u32) void {
     while (py < 16) : (py += 1) {
         var px: u8 = 0;
         while (px < 8) : (px += 1) {
-            if ((font_data[py] << @intCast(px)) >= 0b1000_0000) {
+            const bit: bool = (font_data[py] << @intCast(px)) >= 0b1000_0000;
+            if (bit) {
                 drawPixel(x + px * 2, y + py * 2, Color.fg_color);
                 drawPixel(x + px * 2 + 1, y + py * 2, Color.fg_color);
 
@@ -67,6 +61,13 @@ pub fn drawColorfulBG() void {
 pub fn calcPixelAddr(x: u32, y: u32) [*]u8 {
     return @ptrCast(&boot_info.frame_buf_conf.frame_buf[(boot_info.frame_buf_conf.pixels_per_row * y + x) * 4]);
 }
+
+pub fn initGraphics(frame_buf_conf: *const boot_info.FrameBufConf) void {
+    boot_info.frame_buf_conf = frame_buf_conf.*;
+    drawPixel = if (frame_buf_conf.pixel_format == .RGB8BitPerColor) &drawRGBPixel else &drawBGRPixel;
+}
+
+var drawPixel: *const fn (u32, u32, Color) void = undefined;
 
 fn drawRGBPixel(x: u32, y: u32, color: Color) void {
     var p: [*]u8 = calcPixelAddr(x, y);

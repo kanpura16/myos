@@ -24,11 +24,11 @@ pub fn initXhci() void {
 
     while (usb_status.controller_not_ready == 1) asm volatile ("hlt");
 
-    if (usb_status.host_controller_halted != 1) {
+    if (usb_status.host_controller_halted == 0) {
         usb_cmd.run_stop = 0;
     }
 
-    while (usb_status.host_controller_halted != 1) asm volatile ("hlt");
+    while (usb_status.host_controller_halted == 0) asm volatile ("hlt");
 
     // operational_reg.config.max_dev_slots = cap_reg.hcsparams1.max_slots;
 
