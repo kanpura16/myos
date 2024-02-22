@@ -13,6 +13,7 @@ pub fn build(b: *std.Build) void {
         .target = b.resolveTargetQuery(.{
             .cpu_arch = .x86_64,
             .os_tag = .uefi,
+            .abi = .msvc,
         }),
         .optimize = optimize,
         .linkage = .static,
@@ -29,14 +30,10 @@ pub fn build(b: *std.Build) void {
         }),
         .optimize = optimize,
         .linkage = .static,
-        .link_libc = false,
         .code_model = .kernel,
         .strip = !is_debug,
     });
     kernel.image_base = 0x100000;
     kernel.entry = .{ .symbol_name = "kernelMain" };
-    kernel.link_z_relro = false;
-    kernel.is_linking_libc = false;
-    kernel.is_linking_libcpp = false;
     b.installArtifact(kernel);
 }
