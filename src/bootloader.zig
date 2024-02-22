@@ -142,19 +142,19 @@ pub fn main() uefi.Status {
         return status;
     }
 
-    var gop: ?*uefi.protocol.GraphicsOutput = undefined;
+    var gop: *uefi.protocol.GraphicsOutput = undefined;
     status = bs.locateProtocol(&uefi.protocol.GraphicsOutput.guid, null, @ptrCast(&gop));
     if (status != .Success) {
         printf("failed to get graphics output protocol: {}\r\n", .{status});
         return status;
     }
 
-    const frame_buf_conf: *const boot_info.FrameBufConf = &boot_info.FrameBufConf{
-        .frame_buf = @ptrFromInt(gop.?.mode.frame_buffer_base),
-        .pixels_per_row = gop.?.mode.info.pixels_per_scan_line,
-        .horizon_res = gop.?.mode.info.horizontal_resolution,
-        .vertical_res = gop.?.mode.info.vertical_resolution,
-        .pixel_format = switch (gop.?.mode.info.pixel_format) {
+    const frame_buf_conf = boot_info.FrameBufConf{
+        .frame_buf = @ptrFromInt(gop.mode.frame_buffer_base),
+        .pixels_per_row = gop.mode.info.pixels_per_scan_line,
+        .horizon_res = gop.mode.info.horizontal_resolution,
+        .vertical_res = gop.mode.info.vertical_resolution,
+        .pixel_format = switch (gop.mode.info.pixel_format) {
             .RedGreenBlueReserved8BitPerColor => .RGB8BitPerColor,
             .BlueGreenRedReserved8BitPerColor => .BGR8BitPerColor,
             else => |pixel_format| {
@@ -183,7 +183,7 @@ pub fn main() uefi.Status {
     }
 
     const kernelMain: *const fn (*const boot_info.FrameBufConf) callconv(.SysV) noreturn = @ptrFromInt(ehdr.e_entry);
-    kernelMain(frame_buf_conf);
+    kernelMain(&frame_buf_conf);
 
     return .LoadError;
 }
