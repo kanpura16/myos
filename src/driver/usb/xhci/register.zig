@@ -1,3 +1,5 @@
+const context = @import("context.zig");
+
 pub const CapabilityRegs = packed struct {
     cap_len: u8,
     _resv1: u8,
@@ -19,7 +21,7 @@ pub const OperationalRegs = packed struct {
     dev_notification_ctrl: u32,
     cmd_ring_ctrl: u16,
     _resv2: u128,
-    dev_context_base_addr_arr_ptr: DevContextBaseAddrArrPtr,
+    dev_context_base_addr_arr_ptr: context.DevContextBaseAddrArrPtr,
     config: ConfigReg,
 };
 
@@ -71,11 +73,6 @@ pub const Hcsparams2 = packed struct {
     max_scratchpad_bufs_hi: u5,
     scratchpad_restore: u1,
     max_scratchpad_bufs_lo: u5,
-};
-
-pub const DevContextBaseAddrArrPtr = packed struct {
-    _resv: u6,
-    dev_context_base_addr_arr_ptr: u58,
 };
 
 pub const ConfigReg = packed struct {

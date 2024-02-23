@@ -30,7 +30,11 @@ pub fn initXhci() void {
 
     while (usb_status.host_controller_halted == 0) asm volatile ("hlt");
 
-    // operational_reg.config.max_dev_slots = cap_reg.hcsparams1.max_slots;
+    operational_reg.config.max_dev_slots = cap_reg.hcsparams1.max_slots;
+
+    const scratchpad_buf_arr: [1024]*context.ScratchpadBufArrElem4kPageSize = undefined;
+    _ = scratchpad_buf_arr;
+    // TODO: hcsparams2.max scratchpad buf の数だけ scratchpad buf を確保し, scratchpad buf arr の各要素にそのアドレスを設定して dev context base addr arr[0] に scratchpad buf arr のアドレスを設定する
 
     usb_cmd.host_controller_reset = 1;
     while (usb_cmd.host_controller_reset == 1 or usb_status.controller_not_ready == 1) asm volatile ("hlt");

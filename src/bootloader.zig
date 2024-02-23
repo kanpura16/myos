@@ -60,8 +60,13 @@ pub fn main() uefi.Status {
     }
     const ehdr: *const elf.Elf64Hdr = @ptrCast(&ehdr_buf);
 
-    var kernel_first_addr: u64 = std.math.maxInt(u64);
-    var kernel_last_addr: u64 = 0;
+    var phdrs_buf: [*]align(8) u8 = undefined;
+    status = bs.allocatePool(.LoaderData, @sizeOf(elf.Elf64Phdr) * ehdr.e_phnum, &phdrs_buf);
+    if (status != .Success) {
+        printf("failed to allocate pool for phdrs: {}", .{status});
+    }
+    const phdrs: [*]elf.Elf64Phdr = @ptrCast(phdrs_buf);
+
     var i: u16 = 0;
     while (i < ehdr.e_phnum) : (i += 1) {
         const phdr_size: usize = @sizeOf(elf.Elf64Phdr);
@@ -72,18 +77,21 @@ pub fn main() uefi.Status {
             return status;
         }
 
-        var phdr_buf: [phdr_size]u8 align(8) = undefined;
-        status = kernel_file.read(@constCast(&phdr_size), &phdr_buf);
+        status = kernel_file.read(@constCast(&phdr_size), @ptrCast(&phdrs[i]));
         if (status != .Success) {
             printf("failed to read program header: {}\r\n", .{status});
             return status;
         }
-        const phdr: *const elf.Elf64Phdr = @ptrCast(&phdr_buf);
+    }
 
-        if (phdr.p_type != .PT_LOAD) continue;
+    var kernel_first_addr: u64 = std.math.maxInt(u64);
+    var kernel_last_addr: u64 = 0;
+    i = 0;
+    while (i < ehdr.e_phnum) : (i += 1) {
+        if (phdrs[i].p_type != .PT_LOAD) continue;
 
-        kernel_first_addr = @min(kernel_first_addr, phdr.p_paddr);
-        kernel_last_addr = @max(kernel_last_addr, phdr.p_paddr + phdr.p_memsz);
+        kernel_first_addr = @min(kernel_first_addr, phdrs[i].p_paddr);
+        kernel_last_addr = @max(kernel_last_addr, phdrs[i].p_paddr + phdrs[i].p_memsz);
     }
 
     const num_pages = (kernel_last_addr - kernel_first_addr) / 0x1000 + 1;
@@ -95,39 +103,23 @@ pub fn main() uefi.Status {
 
     i = 0;
     while (i < ehdr.e_phnum) : (i += 1) {
-        const phdr_size: usize = @sizeOf(elf.Elf64Phdr);
+        if (phdrs[i].p_type != .PT_LOAD) continue;
 
-        status = kernel_file.setPosition(ehdr.e_phoff + phdr_size * i);
+        status = kernel_file.setPosition(phdrs[i].p_offset);
         if (status != .Success) {
             printf("failed to set kernel file read position: {}\r\n", .{status});
             return status;
         }
-
-        var phdr_buf: [phdr_size]u8 align(8) = undefined;
-        status = kernel_file.read(@constCast(&phdr_size), &phdr_buf);
-        if (status != .Success) {
-            printf("failed to read program header: {}\r\n", .{status});
-            return status;
-        }
-        const phdr: *const elf.Elf64Phdr = @ptrCast(&phdr_buf);
-
-        if (phdr.p_type != .PT_LOAD) continue;
-
-        status = kernel_file.setPosition(phdr.p_offset);
-        if (status != .Success) {
-            printf("failed to set kernel file read position: {}\r\n", .{status});
-            return status;
-        }
-        status = kernel_file.read(@constCast(&phdr.p_filesz), @ptrFromInt(phdr.p_paddr));
+        status = kernel_file.read(@constCast(&phdrs[i].p_filesz), @ptrFromInt(phdrs[i].p_paddr));
         if (status != .Success) {
             printf("failed to load kernel to memory: {}\r\n", .{status});
             return status;
         }
 
         // initialize bss section with 0
-        const zero_fill_count = phdr.p_memsz - phdr.p_filesz;
+        const zero_fill_count = phdrs[i].p_memsz - phdrs[i].p_filesz;
         if (zero_fill_count > 0) {
-            bs.setMem(@ptrFromInt(phdr.p_paddr + phdr.p_filesz), zero_fill_count, 0);
+            bs.setMem(@ptrFromInt(phdrs[i].p_paddr + phdrs[i].p_filesz), zero_fill_count, 0);
         }
     }
 
@@ -139,6 +131,11 @@ pub fn main() uefi.Status {
     status = root_dir.close();
     if (status != .Success) {
         printf("failed to close root directory: {}\r\n", .{status});
+        return status;
+    }
+    status = bs.freePool(phdrs_buf);
+    if (status != .Success) {
+        printf("failed to free memory for phdrs: {}", .{status});
         return status;
     }
 
@@ -164,7 +161,6 @@ pub fn main() uefi.Status {
         },
     };
 
-    // exit boot service
     comptime var memmap_buf_size: usize = 4096 * 4;
     var memmap_buf: [memmap_buf_size]u8 align(8) = undefined;
     var map_key: usize = 0;

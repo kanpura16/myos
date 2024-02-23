@@ -46,3 +46,13 @@ pub const EndpointContext = packed struct {
     average_trb_len: u16,
     max_endpoint_service_time_interval_payload_low: u16,
 };
+
+pub const DevContextBaseAddrArrPtr = packed struct {
+    _resv: u6,
+    dev_context_base_addr_arr_ptr: u58,
+};
+
+pub const ScratchpadBufArrElem4kPageSize = packed struct {
+    _resv: u12,
+    scratchpad_buf_addr: u52,
+};
