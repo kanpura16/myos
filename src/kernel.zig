@@ -6,14 +6,15 @@ const graphics = @import("graphics.zig");
 const pci = @import("pci.zig");
 const xhci = @import("driver/usb/xhci/xhci.zig");
 
-var kernel_stack: [1024 * 1024 + 1]u8 align(16) = undefined;
+var kernel_stack: [1024 * 1024]u8 align(16) = undefined;
 
 export fn kernelMain(frame_buf_conf: *const boot_info.FrameBufConf) noreturn {
+    const stack_end_addr: u64 = @intFromPtr(&kernel_stack) + @sizeOf(@TypeOf(kernel_stack));
     asm volatile (
-        \\lea 0x100000(%[kernel_stack]), %rsp
+        \\mov %[stack_end_addr], %rsp
         \\mov %rsp, %rbp
         :
-        : [kernel_stack] "{rax}" (&kernel_stack),
+        : [stack_end_addr] "{rax}" (stack_end_addr),
         : "rsp", "rbp"
     );
 
