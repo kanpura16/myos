@@ -14,8 +14,8 @@ pub fn clearConsole() void {
 }
 
 pub fn printf(comptime fmt: []const u8, args: anytype) void {
-    var buf: [256]u8 = undefined;
-    const asciis = std.fmt.bufPrint(&buf, fmt, args) catch unreachable;
+    var buf: [512]u8 = undefined;
+    const asciis = std.fmt.bufPrint(&buf, fmt, args) catch "BufPrintError in console.printf()";
     print(asciis);
 }
 
