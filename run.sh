@@ -24,7 +24,7 @@ if [ "$1" = "debug" ]; then
     -drive file=disk.img,if=ide,media=disk,index=0,format=raw \
     -device qemu-xhci -device usb-kbd \
     -monitor stdio --no-reboot \
-    --trace events=qemu_trace.txt
+    # --trace events=qemu_trace.txt
 
 else
     qemu-system-x86_64 -m 2G \
@@ -33,5 +33,5 @@ else
     -drive file=disk.img,if=ide,media=disk,index=0,format=raw \
     -device qemu-xhci -device usb-kbd \
     -monitor stdio --no-reboot \
-    --trace events=qemu_trace.txt
+    # --trace events=qemu_trace.txt
 fi

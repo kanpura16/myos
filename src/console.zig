@@ -38,7 +38,7 @@ pub fn print(asciis: []const u8) void {
 
 fn newLine() void {
     cursor_x = 0;
-    const is_last_line = cursor_y + font.char_height * 2 <= boot_info.frame_buf_conf.vertical_res;
+    const is_last_line = cursor_y + font.char_height * 2 > boot_info.frame_buf_conf.vertical_res;
     if (is_last_line) {
         scroll();
     } else {
