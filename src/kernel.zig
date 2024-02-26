@@ -10,13 +10,7 @@ var kernel_stack: [1024 * 1024]u8 align(16) = undefined;
 
 export fn kernelMain(frame_buf_conf: *const boot_info.FrameBufConf) noreturn {
     const stack_end_addr: u64 = @intFromPtr(&kernel_stack) + @sizeOf(@TypeOf(kernel_stack));
-    asm volatile (
-        \\mov %[stack_end_addr], %rsp
-        \\mov %rsp, %rbp
-        :
-        : [stack_end_addr] "{rax}" (stack_end_addr),
-        : "rsp", "rbp"
-    );
+    changeStack(stack_end_addr);
 
     graphics.initGraphics(frame_buf_conf);
     console.clearConsole();
@@ -24,4 +18,17 @@ export fn kernelMain(frame_buf_conf: *const boot_info.FrameBufConf) noreturn {
     xhci.initXhci();
 
     while (true) asm volatile ("hlt");
+}
+
+extern fn changeStack(u64) void;
+
+comptime {
+    asm (
+        \\changeStack:
+        \\  mov (%rsp), %rax
+        \\  mov %rdi, %rsp
+        \\  mov %rsp, %rbp
+        \\  push %rax
+        \\  ret
+    );
 }

@@ -36,17 +36,16 @@ fn scanBus(bus: u8) void {
 }
 
 fn scanDevice(bus: u8, device: u8) void {
-    var function: u8 = 0;
-    if (readVendorId(bus, device, function) == 0xffff) return;
-    addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
-    scanFunction(bus, device, function);
+    if (readVendorId(bus, device, 0) == 0xffff) return;
+    addDevice(.{ .bus = bus, .device = device, .function = 0, .class_code = readClassCode(bus, device, 0) });
+    scanFunction(bus, device, 0);
 
-    if (!isSingleFuncDev(readHeaderType(bus, device, function))) {
-        while (function < 8) : (function += 1) {
-            if (readVendorId(bus, device, function) == 0xffff) continue;
-            addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
-            scanFunction(bus, device, function);
-        }
+    if (isSingleFuncDev(readHeaderType(bus, device, 0))) return;
+    var function: u8 = 0;
+    while (function < 8) : (function += 1) {
+        if (readVendorId(bus, device, function) == 0xffff) continue;
+        addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
+        scanFunction(bus, device, function);
     }
 }
 
@@ -102,36 +101,33 @@ fn makeIoPortAddr(bus: u8, device: u8, function: u8, reg_offset: u8) u32 {
     return 1 << 31 | @as(u32, @intCast(bus)) << 16 | @as(u32, @intCast(device)) << 11 | @as(u32, @intCast(function)) << 8 | (reg_offset & 0b1111_1100);
 }
 
-const config_addr_reg_addr: u16 = 0xcf8;
-const config_data_reg_addr: u16 = 0xcfc;
+const config_addr_reg: u16 = 0xcf8;
+const config_data_reg: u16 = 0xcfc;
 
 fn writeIOAddrSpace(addr: u32, data: u32) void {
-    ioOut32(config_addr_reg_addr, addr);
-    ioOut32(config_data_reg_addr, data);
+    ioWrite32(config_addr_reg, addr);
+    ioWrite32(config_data_reg, data);
 }
 
 fn readIOAddrSpace(addr: u32) u32 {
-    ioOut32(config_addr_reg_addr, addr);
-    return ioIn32(config_data_reg_addr);
+    ioWrite32(config_addr_reg, addr);
+    return ioRead32(config_data_reg);
 }
 
-extern fn ioOut32(addr: u16, data: u32) void;
-extern fn ioIn32(addr: u16) u32;
+extern fn ioWrite32(addr: u16, data: u32) void;
+extern fn ioRead32(addr: u16) u32;
 
 comptime {
     asm (
-        \\ioOut32:
-        // %dx = addr;
+        \\ioWrite32:
         \\  mov %di, %dx
-        // %eax = data;
         \\  mov %esi, %eax
         \\  out %eax, %dx
+        \\  ret
         \\
-        \\ioIn32:
-        // %dx = addr
+        \\ioRead32:
         \\  mov %di, %dx
         \\  in %dx, %eax
-        // return %eax
         \\  ret
     );
 }
