@@ -23,7 +23,7 @@ if [ "$1" = "debug" ]; then
     -drive file=/usr/share/ovmf/OVMF_VARS.fd,if=pflash,format=raw \
     -drive file=disk.img,if=ide,media=disk,index=0,format=raw \
     -device qemu-xhci -device usb-kbd \
-    -monitor stdio --no-reboot \
+    -monitor stdio \
     # --trace events=qemu_trace.txt
 
 else
@@ -32,6 +32,6 @@ else
     -drive file=/usr/share/ovmf/OVMF_VARS.fd,if=pflash,format=raw \
     -drive file=disk.img,if=ide,media=disk,index=0,format=raw \
     -device qemu-xhci -device usb-kbd \
-    -monitor stdio --no-reboot \
+    -monitor stdio \
     # --trace events=qemu_trace.txt
 fi

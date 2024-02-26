@@ -34,3 +34,14 @@ comptime {
         \\  ret
     );
 }
+
+pub fn panic(msg: []const u8, stack_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    console.print(msg);
+    if (stack_trace != null) {
+        console.printf("\ninst addr: 0x{x}", .{stack_trace.?.instruction_addresses});
+    }
+    if (ret_addr != null) {
+        console.printf("\nret addr: 0x{x}", .{ret_addr.?});
+    }
+    while (true) asm volatile ("hlt");
+}

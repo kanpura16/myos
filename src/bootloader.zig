@@ -191,3 +191,12 @@ fn printf(comptime format: []const u8, args: anytype) void {
         con_out.outputString(&[_:0]u16{@intCast(ascii)}).err() catch unreachable;
     }
 }
+
+pub fn panic(msg: []const u8, stack_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    _ = stack_trace;
+    _ = ret_addr;
+    for (msg) |ascii| {
+        con_out.outputString(&[_:0]u16{@intCast(ascii)}).err() catch unreachable;
+    }
+    while (true) asm volatile ("hlt");
+}
