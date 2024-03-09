@@ -16,7 +16,7 @@ const SegmentDescriptor = packed struct {
 
 var gdt: [2]SegmentDescriptor = undefined;
 
-pub fn initSegment() void {
+pub fn configureSegment() void {
     // code segment
     gdt[1] = .{
         .segment_type = 10,

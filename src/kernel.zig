@@ -4,6 +4,7 @@ const boot_info = @import("boot_info.zig");
 const console = @import("console.zig");
 const graphics = @import("graphics.zig");
 const segment = @import("segment.zig");
+const paging = @import("paging.zig");
 const pci = @import("pci.zig");
 const xhci = @import("driver/usb/xhci/xhci.zig");
 
@@ -25,15 +26,18 @@ fn kernelMain(frame_buf_conf: *const boot_info.FrameBufConf) noreturn {
     graphics.initGraphics(frame_buf_conf);
     console.clearConsole();
 
-    segment.initSegment();
+    segment.configureSegment();
+    paging.makeIdentityMaping();
 
     pci.scanAllBuses();
     xhci.initXhci();
 
+    console.print("hlt");
     while (true) asm volatile ("hlt");
 }
 
 pub fn panic(msg: []const u8, stack_trace: ?*std.builtin.StackTrace, ret_addr: ?usize) noreturn {
+    console.print("\nUndefined behavior is detected: ");
     console.print(msg);
     if (stack_trace != null) {
         console.printf("\ninst addr: 0x{x}", .{stack_trace.?.instruction_addresses});
