@@ -58,7 +58,7 @@ pub fn drawColorfulBG() void {
     }
 }
 
-pub fn calcPixelAddr(x: u32, y: u32) [*]u8 {
+pub inline fn calcPixelAddr(x: u32, y: u32) [*]volatile u8 {
     return @ptrCast(&boot_info.frame_buf_conf.frame_buf[(boot_info.frame_buf_conf.pixels_per_row * y + x) * 4]);
 }
 
@@ -70,14 +70,14 @@ pub fn initGraphics(frame_buf_conf: *const boot_info.FrameBufConf) void {
 var drawPixel: *const fn (u32, u32, Color) void = undefined;
 
 fn drawRGBPixel(x: u32, y: u32, color: Color) void {
-    var p: [*]u8 = calcPixelAddr(x, y);
+    var p: [*]volatile u8 = calcPixelAddr(x, y);
     p[0] = color.red;
     p[1] = color.green;
     p[2] = color.blue;
 }
 
 fn drawBGRPixel(x: u32, y: u32, color: Color) void {
-    var p: [*]u8 = calcPixelAddr(x, y);
+    var p: [*]volatile u8 = calcPixelAddr(x, y);
     p[0] = color.blue;
     p[1] = color.green;
     p[2] = color.red;

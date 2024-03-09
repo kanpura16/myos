@@ -25,11 +25,12 @@ pub fn initSegment() void {
         .long_mode = 1,
         .operation_size = 0,
     };
+
     loadGdt(@sizeOf(@TypeOf(gdt)) - 1, @intFromPtr(&gdt));
     changeCodeSegment(1 << 3);
 }
 
-extern fn loadGdt(u16, u64) void;
+extern fn loadGdt(size: u16, addr: u64) void;
 extern fn changeCodeSegment(cs: u16) void;
 
 comptime {

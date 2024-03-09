@@ -17,7 +17,7 @@ pub var devices: [32]Device = undefined;
 var num_device: u8 = 0;
 
 pub fn scanAllBuses() void {
-    if (isSingleFuncDev(readHeaderType(0, 0, 0))) {
+    if (isSingleFuncDev(0, 0, 0)) {
         scanBus(0);
     } else {
         var function: u8 = 0;
@@ -31,21 +31,23 @@ pub fn scanAllBuses() void {
 fn scanBus(bus: u8) void {
     var device: u8 = 0;
     while (device < 32) : (device += 1) {
+        if (readVendorId(bus, device, 0) == 0xffff) continue;
         scanDevice(bus, device);
     }
 }
 
 fn scanDevice(bus: u8, device: u8) void {
-    if (readVendorId(bus, device, 0) == 0xffff) return;
-    addDevice(.{ .bus = bus, .device = device, .function = 0, .class_code = readClassCode(bus, device, 0) });
-    scanFunction(bus, device, 0);
+    if (isSingleFuncDev(bus, device, 0)) {
+        addDevice(.{ .bus = bus, .device = device, .function = 0, .class_code = readClassCode(bus, device, 0) });
+        scanFunction(bus, device, 0);
+    } else {
+        var function: u8 = 0;
+        while (function < 8) : (function += 1) {
+            if (readVendorId(bus, device, function) == 0xffff) continue;
 
-    if (isSingleFuncDev(readHeaderType(bus, device, 0))) return;
-    var function: u8 = 0;
-    while (function < 8) : (function += 1) {
-        if (readVendorId(bus, device, function) == 0xffff) continue;
-        addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
-        scanFunction(bus, device, function);
+            addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
+            scanFunction(bus, device, function);
+        }
     }
 }
 
@@ -58,8 +60,9 @@ fn scanFunction(bus: u8, device: u8, function: u8) void {
 }
 
 fn addDevice(device: Device) void {
-    if (num_device == devices.len) {
+    if (num_device >= devices.len) {
         console.print("pci.addDevice(): pci.devices is full");
+        return;
     }
 
     devices[num_device] = device;
@@ -89,8 +92,8 @@ fn readHeaderType(bus: u8, device: u8, function: u8) u8 {
     return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x0c)) >> 16 & 0xff);
 }
 
-fn isSingleFuncDev(header_type: u8) bool {
-    return (header_type & 0b1000_0000) == 0;
+fn isSingleFuncDev(bus: u8, device: u8, function: u8) bool {
+    return (readHeaderType(bus, device, function) & 0b1000_0000) == 0;
 }
 
 fn readSecondaryBus(bus: u8, device: u8, function: u8) u8 {
