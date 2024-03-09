@@ -1,4 +1,4 @@
-const boot_info = @import("boot_info.zig");
+const karg = @import("kernel_arg.zig");
 const font = @import("font.zig");
 
 pub const Color = struct {
@@ -46,9 +46,9 @@ pub fn drawQuadrangle(x: u32, y: u32, size_x: u32, size_y: u32, color: Color) vo
 
 pub fn drawColorfulBG() void {
     var y: u32 = 0;
-    while (y < boot_info.frame_buf_conf.vertical_res) : (y += 1) {
+    while (y < karg.frame_buf_conf.vertical_res) : (y += 1) {
         var x: u32 = 0;
-        while (x < boot_info.frame_buf_conf.horizon_res) : (x += 1) {
+        while (x < karg.frame_buf_conf.horizon_res) : (x += 1) {
             drawPixel(x, y, .{
                 .red = @intCast(y * 3 % 256),
                 .green = @intCast((x + y) % 256),
@@ -59,11 +59,11 @@ pub fn drawColorfulBG() void {
 }
 
 pub inline fn calcPixelAddr(x: u32, y: u32) [*]volatile u8 {
-    return @ptrCast(&boot_info.frame_buf_conf.frame_buf[(boot_info.frame_buf_conf.pixels_per_row * y + x) * 4]);
+    return @ptrCast(&karg.frame_buf_conf.frame_buf[(karg.frame_buf_conf.pixels_per_row * y + x) * 4]);
 }
 
-pub fn initGraphics(frame_buf_conf: *const boot_info.FrameBufConf) void {
-    boot_info.frame_buf_conf = frame_buf_conf.*;
+pub fn initGraphics(frame_buf_conf: *const karg.FrameBufConf) void {
+    karg.frame_buf_conf = frame_buf_conf.*;
     drawPixel = if (frame_buf_conf.pixel_format == .RGB8BitPerColor) &drawRGBPixel else &drawBGRPixel;
 }
 

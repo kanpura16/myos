@@ -1,7 +1,7 @@
 const std = @import("std");
 const uefi = std.os.uefi;
 
-const boot_info = @import("boot_info.zig");
+const karg = @import("kernel_arg.zig");
 const elf = @import("elf.zig");
 
 var con_out: *uefi.protocol.SimpleTextOutput = undefined;
@@ -146,7 +146,7 @@ pub fn main() uefi.Status {
         return status;
     }
 
-    const frame_buf_conf = boot_info.FrameBufConf{
+    const frame_buf_conf = karg.FrameBufConf{
         .frame_buf = @ptrFromInt(gop.mode.frame_buffer_base),
         .pixels_per_row = gop.mode.info.pixels_per_scan_line,
         .horizon_res = gop.mode.info.horizontal_resolution,
@@ -164,9 +164,9 @@ pub fn main() uefi.Status {
     comptime var memmap_buf_size: usize = 4096 * 4;
     var memmap_buf: [memmap_buf_size]u8 align(8) = undefined;
     var map_key: usize = 0;
-    var descriptor_size: usize = 0;
-    var descriptor_version: u32 = 0;
-    status = bs.getMemoryMap(&memmap_buf_size, @ptrCast(&memmap_buf), &map_key, &descriptor_size, &descriptor_version);
+    var desc_size: usize = 0;
+    var desc_version: u32 = 0;
+    status = bs.getMemoryMap(&memmap_buf_size, @ptrCast(&memmap_buf), &map_key, &desc_size, &desc_version);
     if (status != .Success) {
         printf("failed to get memory map: {}\r\n", .{status});
         return status;
@@ -178,7 +178,7 @@ pub fn main() uefi.Status {
         return status;
     }
 
-    const kernelMain: *const fn (*const boot_info.FrameBufConf) callconv(.SysV) noreturn = @ptrFromInt(ehdr.e_entry);
+    const kernelMain: *const fn (*const karg.FrameBufConf) callconv(.SysV) noreturn = @ptrFromInt(ehdr.e_entry);
     kernelMain(&frame_buf_conf);
 
     return .LoadError;
