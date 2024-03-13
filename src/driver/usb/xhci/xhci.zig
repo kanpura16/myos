@@ -12,7 +12,7 @@ pub fn initXhci() void {
             break;
         }
     } else {
-        console.print("xHC not found\n");
+        console.print("\nError: xhci.initXhci: xHC not found\n");
         while (true) asm volatile ("hlt");
     }
 

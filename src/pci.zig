@@ -55,13 +55,13 @@ fn scanFunction(bus: u8, device: u8, function: u8) void {
     const class_code = readClassCode(bus, device, function);
     if (class_code.base == 6 and class_code.sub == 4) {
         // PCI-to-PCI bridge
-        return scanBus(readSecondaryBus(bus, device, function));
+        scanBus(readSecondaryBus(bus, device, function));
     }
 }
 
 fn addDevice(device: Device) void {
     if (num_device >= devices.len) {
-        console.print("pci.addDevice(): pci.devices is full");
+        console.print("\nWarn: pci.addDevice: pci.devices array is full\n");
         return;
     }
 

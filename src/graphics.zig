@@ -62,8 +62,8 @@ pub inline fn calcPixelAddr(x: u32, y: u32) [*]volatile u8 {
     return @ptrCast(&karg.frame_buf_conf.frame_buf[(karg.frame_buf_conf.pixels_per_row * y + x) * 4]);
 }
 
-pub fn initGraphics(frame_buf_conf: *const karg.FrameBufConf) void {
-    karg.frame_buf_conf = frame_buf_conf.*;
+pub fn initGraphics(frame_buf_conf: karg.FrameBufConf) void {
+    karg.frame_buf_conf = frame_buf_conf;
     drawPixel = if (frame_buf_conf.pixel_format == .RGB8BitPerColor) &drawRGBPixel else &drawBGRPixel;
 }
 

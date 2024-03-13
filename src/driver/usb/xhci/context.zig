@@ -1,4 +1,4 @@
-pub var dev_context_base_addr_arr: [256]*DeviceContext align(64) = undefined;
+// pub var dev_context_base_addr_arr: [256]*DeviceContext align(64) = undefined;
 
 pub const DeviceContext = packed struct {
     slot_context: SlotContext,

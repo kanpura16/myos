@@ -178,8 +178,9 @@ pub fn main() uefi.Status {
         return status;
     }
 
-    const kernelMain: *const fn (*const karg.FrameBufConf) callconv(.SysV) noreturn = @ptrFromInt(ehdr.e_entry);
-    kernelMain(&frame_buf_conf);
+    const kernelEntry: *const fn (*const karg.FrameBufConf, *const karg.MemoryMap) callconv(.SysV) noreturn = @ptrFromInt(ehdr.e_entry);
+    const memmap: karg.MemoryMap = .{ .map = @ptrCast(&memmap_buf), .map_size = memmap_buf_size, .desc_size = desc_size };
+    kernelEntry(&frame_buf_conf, &memmap);
 
     return .LoadError;
 }

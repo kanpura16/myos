@@ -15,7 +15,7 @@ pub fn clearConsole() void {
 
 pub fn printf(comptime fmt: []const u8, args: anytype) void {
     var buf: [512]u8 = undefined;
-    const asciis = std.fmt.bufPrint(&buf, fmt, args) catch "BufPrintError in console.printf()";
+    const asciis = std.fmt.bufPrint(&buf, fmt, args) catch "\nError: console.printf: BufPrintError\n";
     print(asciis);
 }
 
@@ -47,6 +47,7 @@ fn newLine() void {
 }
 
 fn scroll() void {
+    @setRuntimeSafety(false);
     var y: u32 = 0;
     while (y < karg.frame_buf_conf.vertical_res - font.char_height) : (y += font.char_height) {
         @memcpy(graphics.calcPixelAddr(0, y), graphics.calcPixelAddr(0, y + font.char_height)[0 .. karg.frame_buf_conf.pixels_per_row * font.char_height * 4]);
