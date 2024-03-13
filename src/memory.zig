@@ -23,7 +23,7 @@ pub fn allocFrame(num_frames: usize) [*]align(4096) u8 {
 
         for (0..num_frames) |j| {
             frame_bitmap[i_bitmap + j] = false;
-            const frame: *allowzero [4096]u8 = @ptrFromInt((i_bitmap + j) * 4096);
+            const frame: *[4096]u8 = @ptrFromInt((i_bitmap + j) * 4096);
             @memset(frame, 0);
         }
 
