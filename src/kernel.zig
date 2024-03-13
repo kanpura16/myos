@@ -8,6 +8,7 @@ const segment = @import("segment.zig");
 const paging = @import("paging.zig");
 const pci = @import("pci.zig");
 const xhci = @import("driver/usb/xhci/xhci.zig");
+const context = @import("driver/usb/xhci/context.zig");
 
 var kernel_stack: [1024 * 1024]u8 align(16) = undefined;
 
@@ -30,17 +31,6 @@ fn kernelMain(frame_buf_conf: karg.FrameBufConf, memory_map: karg.MemoryMap) nor
     segment.configureSegment();
     paging.makeIdentityMaping();
     memory.initAllocator(memory_map);
-
-    {
-        const p: *allowzero align(4096) [4096 * 1000]u8 = @ptrCast(memory.allocFrame(1000));
-        defer memory.freeFrame(p, 1000);
-
-        var sum: u64 = 0;
-        for (p) |pi| {
-            sum += pi;
-        }
-        console.printf("{}\n", .{sum});
-    }
 
     pci.scanAllBuses();
     xhci.initXhci();

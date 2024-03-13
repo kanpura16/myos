@@ -1,37 +1,41 @@
 const console = @import("../../../console.zig");
+const memory = @import("../../../memory.zig");
 const pci = @import("../../../pci.zig");
 const context = @import("context.zig");
-const register = @import("register.zig");
+const CapReg = @import("register.zig").CapabilityRegs;
+const OpeReg = @import("register.zig").OperationalRegs;
 
 pub fn initXhci() void {
-    var xhc: pci.Device = undefined;
-    for (pci.devices) |device| {
+    const xhc: pci.Device = blk: for (pci.devices) |device| {
         const class_code = pci.readClassCode(device.bus, device.device, device.function);
         if (class_code.base == 0x0c and class_code.sub == 0x3 and class_code.interface == 0x30) {
-            xhc = device;
-            break;
+            break :blk device;
         }
     } else {
         console.print("\nError: xhci.initXhci: xHC not found\n");
         while (true) asm volatile ("hlt");
-    }
+    };
 
     const mmio_base: u64 = pci.readBar(xhc.bus, xhc.device, xhc.function) & 0xffff_ffff_ffff_fff0;
-    const cap_reg: *volatile register.CapabilityRegs = @ptrFromInt(mmio_base);
-    const operational_reg: *volatile register.OperationalRegs = @ptrFromInt(mmio_base + cap_reg.cap_len);
-    const usb_status: *volatile register.UsbStatusReg = &operational_reg.usb_status;
-    const usb_cmd: *volatile register.UsbCmdReg = &operational_reg.usb_cmd;
+    const cap_reg: *volatile CapReg = @ptrFromInt(mmio_base);
+    const ope_reg: *volatile OpeReg = @ptrFromInt(mmio_base + cap_reg.cap_len);
+    const usb_status: *volatile OpeReg.UsbStatusReg = &ope_reg.usb_status;
+    const usb_cmd: *volatile OpeReg.UsbCmdReg = &ope_reg.usb_cmd;
 
     while (usb_status.controller_not_ready == 1) asm volatile ("hlt");
 
     usb_cmd.run_stop = 0;
 
-    // operational_reg.config.max_dev_slots = cap_reg.hcsparams1.max_slots;
+    ope_reg.config.max_dev_slots = cap_reg.hcsparams1.max_slots;
 
-    // TODO:
-    // hcsparams2.max_scratchpad_buf の数だけ scratchpad_buf(bytes = cap_reg.page_size) を確保
-    // scratchpad_buf_arr の各要素に scratchpad_buf のアドレスを設定
-    // dev_context_base_addr_arr[0] に scratchpad_buf_arr のアドレスを設定
+    const num_scratchpad_buf = @as(u16, @intCast(cap_reg.hcsparams2.max_scratchpad_bufs_hi)) << 5 | cap_reg.hcsparams2.max_scratchpad_bufs_lo;
+    if (num_scratchpad_buf > 0) {
+        for (0..num_scratchpad_buf) |i| {
+            context.scratchpad_buf_arr[i] = @ptrCast(memory.allocFrame(1));
+        }
+        context.dev_context_base_addr_arr[0] = @ptrCast(&context.scratchpad_buf_arr[0]);
+    }
+    ope_reg.dev_context_base_addr_arr_ptr = @intFromPtr(&context.dev_context_base_addr_arr[0]);
 
     usb_cmd.host_controller_reset = 1;
     while (usb_status.controller_not_ready == 1 or usb_cmd.host_controller_reset == 1) asm volatile ("hlt");
