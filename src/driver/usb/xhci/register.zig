@@ -35,9 +35,9 @@ pub const OperationalRegs = packed struct(u480) {
     page_size: u32,
     _resv1: u64,
     dev_notification_ctrl: u32,
-    cmd_ring_ctrl: u64,
+    cmd_ring_ctrl: CmdRingCtrl,
     _resv2: u128,
-    dev_context_base_addr_arr_ptr: u64,
+    dev_context_base_addr_arr_ptr: *align(64) [256]*allowzero align(64) context.DeviceContext,
     config: ConfigReg,
 
     pub const UsbCmdReg = packed struct(u32) {
@@ -72,6 +72,15 @@ pub const OperationalRegs = packed struct(u480) {
         controller_not_ready: u1,
         host_controller_err: u1,
         _resv3: u19,
+    };
+
+    pub const CmdRingCtrl = packed struct(u64) {
+        ring_cycle_state: u1,
+        cmd_stop: u1,
+        cmd_abort: u1,
+        cmd_ring_running: u1,
+        _resv: u2,
+        cmd_ring_ptr: u58,
     };
 
     pub const ConfigReg = packed struct(u32) {

@@ -2,6 +2,7 @@ const console = @import("../../../console.zig");
 const memory = @import("../../../memory.zig");
 const pci = @import("../../../pci.zig");
 const context = @import("context.zig");
+const ring = @import("ring.zig");
 const CapReg = @import("register.zig").CapabilityRegs;
 const OpeReg = @import("register.zig").OperationalRegs;
 
@@ -30,12 +31,19 @@ pub fn initXhci() void {
 
     const num_scratchpad_buf = @as(u16, @intCast(cap_reg.hcsparams2.max_scratchpad_bufs_hi)) << 5 | cap_reg.hcsparams2.max_scratchpad_bufs_lo;
     if (num_scratchpad_buf > 0) {
+        context.scratchpad_buf_arr = @ptrCast(memory.allocFrame(2));
+
         for (0..num_scratchpad_buf) |i| {
-            context.scratchpad_buf_arr[i] = @ptrCast(memory.allocFrame(1));
+            context.scratchpad_buf_arr.*[i] = @ptrCast(memory.allocFrame(1));
         }
-        context.dev_context_base_addr_arr[0] = @ptrCast(&context.scratchpad_buf_arr[0]);
+        context.dev_context_base_addr_arr[0] = @ptrCast(context.scratchpad_buf_arr);
     }
-    ope_reg.dev_context_base_addr_arr_ptr = @intFromPtr(&context.dev_context_base_addr_arr[0]);
+    ope_reg.dev_context_base_addr_arr_ptr = &context.dev_context_base_addr_arr;
+
+    ope_reg.cmd_ring_ctrl.ring_cycle_state = 1;
+    ope_reg.cmd_ring_ctrl.cmd_stop = 0;
+    ope_reg.cmd_ring_ctrl.cmd_abort = 0;
+    ope_reg.cmd_ring_ctrl.cmd_ring_ptr = @intCast(@intFromPtr(&ring.cmd_ring.trb[0]) >> 6);
 
     usb_cmd.host_controller_reset = 1;
     while (usb_status.controller_not_ready == 1 or usb_cmd.host_controller_reset == 1) asm volatile ("hlt");

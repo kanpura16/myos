@@ -6,12 +6,14 @@ var frame_bitmap: [1024 * 1024 * 1]bool = undefined;
 pub fn allocFrame(num_frames: usize) [*]align(4096) u8 {
     if (num_frames == 0) {
         console.print("\nError: memory.allocFrame: 0 byte allocation request\n");
+        console.printf("return addr: 0x{}", .{@returnAddress()});
         while (true) asm volatile ("hlt");
     }
 
     outer: for (frame_bitmap, 0..) |avail, i_bitmap| {
         if (i_bitmap + num_frames > frame_bitmap.len) {
             console.printf("\nError: memory.allocFrame: {} frames not found\n", .{num_frames});
+            console.printf("return addr: 0x{}", .{@returnAddress()});
             while (true) asm volatile ("hlt");
         }
 
@@ -31,6 +33,7 @@ pub fn allocFrame(num_frames: usize) [*]align(4096) u8 {
     }
 
     console.printf("\nError: memory.allocFrame: {} frames not found\n", .{num_frames});
+    console.printf("return addr: 0x{}", .{@returnAddress()});
     while (true) asm volatile ("hlt");
 }
 

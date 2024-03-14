@@ -1,5 +1,5 @@
 pub var dev_context_base_addr_arr: [256]*allowzero align(64) DeviceContext align(64) = undefined;
-pub var scratchpad_buf_arr: [1024]*allowzero align(4096) [4096]u8 align(64) = undefined;
+pub var scratchpad_buf_arr: *align(64) [1024]*allowzero align(4096) [4096]u8 = undefined;
 
 pub const DeviceContext = packed struct {
     slot_context: SlotContext,

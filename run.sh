@@ -6,7 +6,6 @@ else
     zig build
 fi
 
-rm -f disk.img
 qemu-img create -f raw disk.img 32M
 mkfs.fat disk.img
 
@@ -25,7 +24,6 @@ if [ "$1" = "debug" ]; then
     -device qemu-xhci -device usb-kbd \
     -monitor stdio \
     --trace events=qemu_trace.txt
-
 else
     qemu-system-x86_64 -m 2G \
     -drive file=/usr/share/ovmf/OVMF_CODE.fd,if=pflash,format=raw,readonly=on \
