@@ -1,6 +1,6 @@
 const context = @import("context.zig");
 
-pub const CapabilityRegs = packed struct(u256) {
+pub const CapabilityReg = packed struct(u256) {
     cap_len: u8,
     _resv1: u8,
     hciverrsion: u16,
@@ -29,15 +29,15 @@ pub const CapabilityRegs = packed struct(u256) {
     };
 };
 
-pub const OperationalRegs = packed struct(u480) {
+pub const OperationalReg = packed struct(u480) {
     usb_cmd: UsbCmdReg,
     usb_status: UsbStatusReg,
     page_size: u32,
     _resv1: u64,
     dev_notification_ctrl: u32,
     cmd_ring_ctrl: CmdRingCtrl,
-    _resv2: u128,
-    dev_context_base_addr_arr_ptr: *align(64) [256]*allowzero align(64) context.DeviceContext,
+    _resv2: u134,
+    dev_context_base_addr_arr_ptr: u58,
     config: ConfigReg,
 
     pub const UsbCmdReg = packed struct(u32) {
@@ -88,5 +88,25 @@ pub const OperationalRegs = packed struct(u480) {
         u3_entry_enable: u1,
         config_info_enable: u1,
         _resv: u22,
+    };
+};
+
+pub const RuntimeReg = packed struct {
+    microframe_idx: u14,
+    _resv: u242,
+    interrupt_reg_set1: InterruptRegSet,
+
+    pub const InterruptRegSet = packed struct(u256) {
+        interrupt_pending: u1,
+        interrupt_enable: u1,
+        _resv1: u30,
+        interrupt_moderation_interval: u16,
+        interrupt_moderation_counter: u16,
+        event_ring_segment_table_size: u16,
+        _resv2: u54,
+        event_ring_segment_table_ptr: u58,
+        dequeue_erst_segment_idx: u3,
+        event_handler_busy: u1,
+        event_ring_dequeue_ptr: u60,
     };
 };
