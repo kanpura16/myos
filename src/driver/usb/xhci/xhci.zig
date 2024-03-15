@@ -52,6 +52,7 @@ pub fn initXhci() void {
         },
     };
 
+    ring.prim_event_ring.int_reg_dequeue_ptr = @ptrCast(&runtime_reg.interrupt_reg_set1.event_ring_dequeue_ptr);
     runtime_reg.interrupt_reg_set1.event_ring_segment_table_size = ring.event_ring_segment_table.len;
     runtime_reg.interrupt_reg_set1.event_ring_dequeue_ptr = @intCast(@intFromPtr(&ring.prim_event_ring.trbs[0]) >> 4);
     runtime_reg.interrupt_reg_set1.event_ring_segment_table_ptr = @intCast(@intFromPtr(&ring.event_ring_segment_table) >> 6);
