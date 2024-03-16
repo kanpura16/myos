@@ -23,9 +23,9 @@ pub fn allocFrame(num_frames: usize) [*]align(4096) u8 {
             if (frame_bitmap[i_bitmap + i] == false) continue :outer;
         }
 
-        for (0..num_frames) |j| {
-            frame_bitmap[i_bitmap + j] = false;
-            const frame: *[4096]u8 = @ptrFromInt((i_bitmap + j) * 4096);
+        for (0..num_frames) |i| {
+            frame_bitmap[i_bitmap + i] = false;
+            const frame: *[4096]u8 = @ptrFromInt((i_bitmap + i) * 4096);
             @memset(frame, 0);
         }
 

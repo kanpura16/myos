@@ -18,37 +18,31 @@ pub fn drawAsciis(asciis: []const u8, x: u32, y: u32) void {
 
 pub fn drawAscii(ascii: u8, x: u32, y: u32) void {
     const font_data = font.getFontFromAscii(ascii);
-    var py: u8 = 0;
-    while (py < 16) : (py += 1) {
-        var px: u8 = 0;
-        while (px < 8) : (px += 1) {
-            const bit: bool = (font_data[py] << @intCast(px)) >= 0b1000_0000;
+    for (0..16) |font_y| {
+        for (0..8) |font_x| {
+            const bit: bool = (font_data[font_y] << @intCast(font_x)) >= 0b1000_0000;
             if (bit) {
-                drawPixel(x + px * 2, y + py * 2, Color.fg_color);
-                drawPixel(x + px * 2 + 1, y + py * 2, Color.fg_color);
+                drawPixel(@intCast(x + font_x * 2), @intCast(y + font_y * 2), Color.fg_color);
+                drawPixel(@intCast(x + font_x * 2 + 1), @intCast(y + font_y * 2), Color.fg_color);
 
-                drawPixel(x + px * 2, y + py * 2 + 1, Color.fg_color);
-                drawPixel(x + px * 2 + 1, y + py * 2 + 1, Color.fg_color);
+                drawPixel(@intCast(x + font_x * 2), @intCast(y + font_y * 2 + 1), Color.fg_color);
+                drawPixel(@intCast(x + font_x * 2 + 1), @intCast(y + font_y * 2 + 1), Color.fg_color);
             }
         }
     }
 }
 
 pub fn drawQuadrangle(x: u32, y: u32, size_x: u32, size_y: u32, color: Color) void {
-    var py: u32 = 0;
-    while (py < size_y) : (py += 1) {
-        var px: u32 = 0;
-        while (px < size_x) : (px += 1) {
-            drawPixel(x + px, y + py, color);
+    for (0..size_y) |py| {
+        for (0..size_x) |px| {
+            drawPixel(@intCast(x + px), @intCast(y + py), color);
         }
     }
 }
 
 pub fn drawColorfulBG() void {
-    var y: u32 = 0;
-    while (y < karg.frame_buf_conf.vertical_res) : (y += 1) {
-        var x: u32 = 0;
-        while (x < karg.frame_buf_conf.horizon_res) : (x += 1) {
+    for (0..karg.frame_buf_conf.vertical_res) |y| {
+        for (0..karg.frame_buf_conf.horizon_res) |x| {
             drawPixel(x, y, .{
                 .red = @intCast(y * 3 % 256),
                 .green = @intCast((x + y) % 256),

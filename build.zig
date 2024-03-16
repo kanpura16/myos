@@ -33,7 +33,7 @@ pub fn build(b: *std.Build) void {
         .code_model = .kernel,
         .strip = !is_debug,
     });
-    kernel.image_base = 0x100000;
+    kernel.image_base = 0x10_0000;
     kernel.entry = .{ .symbol_name = "kernelEntry" };
     b.installArtifact(kernel);
 }

@@ -1,9 +1,9 @@
 #!/bin/sh
 
 if [ "$1" = "debug" ]; then
-    zig build -Ddebug=true
+    zig build -Ddebug=true --summary none
 else
-    zig build
+    zig build --summary none
 fi
 
 qemu-img create -f raw disk.img 32M

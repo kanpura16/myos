@@ -4,11 +4,12 @@ const pci = @import("../../../pci.zig");
 const reg = @import("register.zig");
 const context = @import("context.zig");
 const ring = @import("ring.zig");
+const trb = @import("trb.zig");
 
 pub fn initXhci() void {
     const xhc: pci.Device = blk: for (pci.devices) |device| {
         const class_code = pci.readClassCode(device.bus, device.device, device.function);
-        if (class_code.base == 0x0c and class_code.sub == 0x3 and class_code.interface == 0x30) {
+        if (class_code.base == 0x0c and class_code.sub == 0x03 and class_code.interface == 0x30) {
             break :blk device;
         }
     } else {
@@ -26,6 +27,10 @@ pub fn initXhci() void {
     while (usb_status.controller_not_ready == 1) asm volatile ("hlt");
 
     usb_cmd.run_stop = 0;
+    while (usb_status.host_controller_halted == 0) asm volatile ("hlt");
+
+    usb_cmd.host_controller_reset = 1;
+    while (usb_cmd.host_controller_reset == 1 or usb_status.controller_not_ready == 1) asm volatile ("hlt");
 
     ope_reg.config.max_dev_slots = cap_reg.hcsparams1.max_slots;
 
@@ -57,6 +62,6 @@ pub fn initXhci() void {
     runtime_reg.interrupt_reg_set1.event_ring_dequeue_ptr = @intCast(@intFromPtr(&ring.prim_event_ring.trbs[0]) >> 4);
     runtime_reg.interrupt_reg_set1.event_ring_segment_table_ptr = @intCast(@intFromPtr(&ring.event_ring_segment_table) >> 6);
 
-    usb_cmd.host_controller_reset = 1;
-    while (usb_status.controller_not_ready == 1 or usb_cmd.host_controller_reset == 1) asm volatile ("hlt");
+    usb_cmd.run_stop = 1;
+    while (usb_status.host_controller_halted == 1) asm volatile ("hlt");
 }

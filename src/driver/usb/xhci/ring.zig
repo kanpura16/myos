@@ -51,8 +51,9 @@ const EventRing = struct {
 
     pub fn pop(self: *@This()) ?u128 {
         const elem_trb: *const trb.Trb = @ptrCast(&self.trbs[self.dequeue_idx]);
+        const is_valid_trb = elem_trb.field.cycle_bit == self.cycle_bit;
 
-        defer if (elem_trb.field.cycle_bit == self.cycle_bit) {
+        defer if (is_valid_trb) {
             self.dequeue_idx += 1;
             self.int_reg_dequeue_ptr.* += 16;
             if (self.dequeue_idx == self.trbs.len) {
@@ -62,12 +63,10 @@ const EventRing = struct {
             }
         };
 
-        return blk: {
-            if (elem_trb.field.cycle_bit == self.cycle_bit) {
-                break :blk self.trbs[self.dequeue_idx];
-            } else {
-                break :blk null;
-            }
-        };
+        if (is_valid_trb) {
+            return self.trbs[self.dequeue_idx];
+        } else {
+            return null;
+        }
     }
 };

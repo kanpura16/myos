@@ -32,11 +32,12 @@ pub const CapabilityReg = packed struct(u256) {
 pub const OperationalReg = packed struct(u480) {
     usb_cmd: UsbCmdReg,
     usb_status: UsbStatusReg,
-    page_size: u32,
-    _resv1: u64,
-    dev_notification_ctrl: u32,
+    page_size: u16,
+    _resv1: u80,
+    notification_enable: u16,
+    _resv2: u16,
     cmd_ring_ctrl: CmdRingCtrl,
-    _resv2: u134,
+    _resv3: u134,
     dev_context_base_addr_arr_ptr: u58,
     config: ConfigReg,
 

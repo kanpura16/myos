@@ -5,75 +5,45 @@ pub const Device = struct {
     device: u8,
     function: u8,
     class_code: ClassCode,
-};
 
-const ClassCode = struct {
-    base: u8,
-    sub: u8,
-    interface: u8,
+    const ClassCode = struct {
+        base: u8,
+        sub: u8,
+        interface: u8,
+    };
 };
 
 pub var devices: [32]Device = undefined;
 var num_device: u8 = 0;
 
 pub fn scanAllBuses() void {
-    if (isSingleFuncDev(0, 0, 0)) {
-        scanBus(0);
-    } else {
-        var function: u8 = 0;
-        while (function < 8) : (function += 1) {
-            if (readVendorId(0, 0, function) == 0xffff) continue;
-            scanBus(function);
+    for (0..256) |i_bus| {
+        for (0..32) |i_device| {
+            for (0..8) |i_func| {
+                if (readVendorId(@intCast(i_bus), @intCast(i_device), @intCast(i_func)) == 0xffff) continue;
+
+                if (num_device >= devices.len) {
+                    console.print("\nWarn: pci.addDevice: pci.devices array is full\n");
+                    return;
+                }
+
+                devices[num_device] = .{
+                    .bus = @intCast(i_bus),
+                    .device = @intCast(i_device),
+                    .function = @intCast(i_func),
+                    .class_code = readClassCode(@intCast(i_bus), @intCast(i_device), @intCast(i_func)),
+                };
+                num_device += 1;
+            }
         }
     }
-}
-
-fn scanBus(bus: u8) void {
-    var device: u8 = 0;
-    while (device < 32) : (device += 1) {
-        if (readVendorId(bus, device, 0) == 0xffff) continue;
-        scanDevice(bus, device);
-    }
-}
-
-fn scanDevice(bus: u8, device: u8) void {
-    if (isSingleFuncDev(bus, device, 0)) {
-        addDevice(.{ .bus = bus, .device = device, .function = 0, .class_code = readClassCode(bus, device, 0) });
-        scanFunction(bus, device, 0);
-    } else {
-        var function: u8 = 0;
-        while (function < 8) : (function += 1) {
-            if (readVendorId(bus, device, function) == 0xffff) continue;
-
-            addDevice(.{ .bus = bus, .device = device, .function = function, .class_code = readClassCode(bus, device, function) });
-            scanFunction(bus, device, function);
-        }
-    }
-}
-
-fn scanFunction(bus: u8, device: u8, function: u8) void {
-    const class_code = readClassCode(bus, device, function);
-    if (class_code.base == 6 and class_code.sub == 4) {
-        // PCI-to-PCI bridge
-        scanBus(readSecondaryBus(bus, device, function));
-    }
-}
-
-fn addDevice(device: Device) void {
-    if (num_device >= devices.len) {
-        console.print("\nWarn: pci.addDevice: pci.devices array is full\n");
-        return;
-    }
-
-    devices[num_device] = device;
-    num_device += 1;
 }
 
 pub fn readVendorId(bus: u8, device: u8, function: u8) u16 {
     return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0)) & 0xffff);
 }
 
-pub fn readClassCode(bus: u8, device: u8, function: u8) ClassCode {
+pub fn readClassCode(bus: u8, device: u8, function: u8) Device.ClassCode {
     const class_code: u32 = readIOAddrSpace(makeIoPortAddr(bus, device, function, 8));
     return .{
         .base = @intCast(class_code >> 24 & 0xff),
@@ -83,54 +53,42 @@ pub fn readClassCode(bus: u8, device: u8, function: u8) ClassCode {
 }
 
 pub fn readBar(bus: u8, device: u8, function: u8) u64 {
-    const bar0: u64 = readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x10));
-    const bar1: u64 = readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x14));
-    return bar1 << 32 | bar0;
+    const bar_low: u32 = readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x10));
+    const bar_high: u64 = readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x14));
+    return bar_high << 32 | bar_low;
 }
 
-fn readHeaderType(bus: u8, device: u8, function: u8) u8 {
-    return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x0c)) >> 16 & 0xff);
-}
-
-fn isSingleFuncDev(bus: u8, device: u8, function: u8) bool {
-    return (readHeaderType(bus, device, function) & 0b1000_0000) == 0;
-}
-
-fn readSecondaryBus(bus: u8, device: u8, function: u8) u8 {
-    return @intCast(readIOAddrSpace(makeIoPortAddr(bus, device, function, 0x18)) >> 8 & 0xff);
-}
-
-fn makeIoPortAddr(bus: u8, device: u8, function: u8, reg_offset: u8) u32 {
-    return 1 << 31 | @as(u32, @intCast(bus)) << 16 | @as(u32, @intCast(device)) << 11 | @as(u32, @intCast(function)) << 8 | (reg_offset & 0b1111_1100);
+fn makeIoPortAddr(bus: u32, device: u32, function: u32, comptime reg_offset: u8) u32 {
+    return 1 << 31 | bus << 16 | device << 11 | function << 8 | (reg_offset & 0b1111_1100);
 }
 
 const config_addr_reg: u16 = 0xcf8;
 const config_data_reg: u16 = 0xcfc;
-
-fn writeIOAddrSpace(addr: u32, data: u32) void {
-    ioWrite32(config_addr_reg, addr);
-    ioWrite32(config_data_reg, data);
-}
 
 fn readIOAddrSpace(addr: u32) u32 {
     ioWrite32(config_addr_reg, addr);
     return ioRead32(config_data_reg);
 }
 
-extern fn ioWrite32(addr: u16, data: u32) void;
+fn writeIOAddrSpace(addr: u32, data: u32) void {
+    ioWrite32(config_addr_reg, addr);
+    ioWrite32(config_data_reg, data);
+}
+
 extern fn ioRead32(addr: u16) u32;
+extern fn ioWrite32(addr: u16, data: u32) void;
 
 comptime {
     asm (
+        \\ioRead32:
+        \\  mov %di, %dx
+        \\  in %dx, %eax
+        \\  ret
+        \\
         \\ioWrite32:
         \\  mov %di, %dx
         \\  mov %esi, %eax
         \\  out %eax, %dx
-        \\  ret
-        \\
-        \\ioRead32:
-        \\  mov %di, %dx
-        \\  in %dx, %eax
         \\  ret
     );
 }
