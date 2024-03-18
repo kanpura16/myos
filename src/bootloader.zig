@@ -67,17 +67,16 @@ pub fn main() uefi.Status {
     }
     const phdrs: [*]elf.Elf64Phdr = @ptrCast(phdrs_buf);
 
-    var i: u16 = 0;
-    while (i < ehdr.e_phnum) : (i += 1) {
+    for (0..ehdr.e_phnum) |i_phdr| {
         const phdr_size: usize = @sizeOf(elf.Elf64Phdr);
 
-        status = kernel_file.setPosition(ehdr.e_phoff + phdr_size * i);
+        status = kernel_file.setPosition(ehdr.e_phoff + phdr_size * i_phdr);
         if (status != .Success) {
             printf("failed to set kernel file read position: {}\r\n", .{status});
             return status;
         }
 
-        status = kernel_file.read(@constCast(&phdr_size), @ptrCast(&phdrs[i]));
+        status = kernel_file.read(@constCast(&phdr_size), @ptrCast(&phdrs[i_phdr]));
         if (status != .Success) {
             printf("failed to read program header: {}\r\n", .{status});
             return status;
@@ -86,12 +85,11 @@ pub fn main() uefi.Status {
 
     var kernel_first_addr: u64 = std.math.maxInt(u64);
     var kernel_last_addr: u64 = 0;
-    i = 0;
-    while (i < ehdr.e_phnum) : (i += 1) {
-        if (phdrs[i].p_type != .PT_LOAD) continue;
+    for (0..ehdr.e_phnum) |i_phdr| {
+        if (phdrs[i_phdr].p_type != .PT_LOAD) continue;
 
-        kernel_first_addr = @min(kernel_first_addr, phdrs[i].p_paddr);
-        kernel_last_addr = @max(kernel_last_addr, phdrs[i].p_paddr + phdrs[i].p_memsz);
+        kernel_first_addr = @min(kernel_first_addr, phdrs[i_phdr].p_paddr);
+        kernel_last_addr = @max(kernel_last_addr, phdrs[i_phdr].p_paddr + phdrs[i_phdr].p_memsz);
     }
 
     const num_pages = (kernel_last_addr - kernel_first_addr) / 0x1000 + 1;
@@ -101,25 +99,24 @@ pub fn main() uefi.Status {
         return status;
     }
 
-    i = 0;
-    while (i < ehdr.e_phnum) : (i += 1) {
-        if (phdrs[i].p_type != .PT_LOAD) continue;
+    for (0..ehdr.e_phnum) |i_phdr| {
+        if (phdrs[i_phdr].p_type != .PT_LOAD) continue;
 
-        status = kernel_file.setPosition(phdrs[i].p_offset);
+        status = kernel_file.setPosition(phdrs[i_phdr].p_offset);
         if (status != .Success) {
             printf("failed to set kernel file read position: {}\r\n", .{status});
             return status;
         }
-        status = kernel_file.read(@constCast(&phdrs[i].p_filesz), @ptrFromInt(phdrs[i].p_paddr));
+        status = kernel_file.read(@constCast(&phdrs[i_phdr].p_filesz), @ptrFromInt(phdrs[i_phdr].p_paddr));
         if (status != .Success) {
             printf("failed to load kernel to memory: {}\r\n", .{status});
             return status;
         }
 
         // initialize bss section with 0
-        const zero_fill_count = phdrs[i].p_memsz - phdrs[i].p_filesz;
+        const zero_fill_count = phdrs[i_phdr].p_memsz - phdrs[i_phdr].p_filesz;
         if (zero_fill_count > 0) {
-            bs.setMem(@ptrFromInt(phdrs[i].p_paddr + phdrs[i].p_filesz), zero_fill_count, 0);
+            bs.setMem(@ptrFromInt(phdrs[i_phdr].p_paddr + phdrs[i_phdr].p_filesz), zero_fill_count, 0);
         }
     }
 

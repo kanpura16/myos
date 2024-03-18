@@ -18,7 +18,7 @@ var num_device: u8 = 0;
 
 pub fn scanAllBuses() void {
     for (0..256) |i_bus| {
-        for (0..32) |i_device| {
+        inline for (0..32) |i_device| {
             for (0..8) |i_func| {
                 if (readVendorId(@intCast(i_bus), @intCast(i_device), @intCast(i_func)) == 0xffff) continue;
 
