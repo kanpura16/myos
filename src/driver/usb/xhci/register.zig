@@ -95,7 +95,7 @@ pub const OperationalReg = packed struct(u480) {
 pub const RuntimeReg = packed struct {
     microframe_idx: u14,
     _resv: u242,
-    interrupt_reg_set1: InterruptRegSet,
+    interrupt_reg1: InterruptRegSet,
 
     pub const InterruptRegSet = packed struct(u256) {
         interrupt_pending: u1,
@@ -110,4 +110,44 @@ pub const RuntimeReg = packed struct {
         event_handler_busy: u1,
         event_ring_dequeue_ptr: u60,
     };
+};
+
+pub const PortscReg = packed struct(u32) {
+    current_connect_status: u1,
+    port_enable: u1,
+    _resv1: u1,
+    over_current_active: u1,
+    port_reset: u1,
+    port_link_state: u4,
+    port_power: u1,
+    port_speed: u4,
+    port_indicator_ctrl: u2,
+    port_link_state_write_strobe: u1,
+    connect_status_change: u1,
+    port_enable_change: u1,
+    warm_port_reset_change: u1,
+    over_current_change: u1,
+    port_reset_change: u1,
+    port_link_state_change: u1,
+    port_config_err_change: u1,
+    cold_attach_status: u1,
+    wake_on_connect_enable: u1,
+    wake_on_disconnect_enable: u1,
+    wake_on_over_current_enable: u1,
+    _resv2: u2,
+    device_removable: u1,
+    warm_port_reset: u1,
+
+    pub fn writeZeroToRw1csBit(portsc: @This()) @This() {
+        var tmp_portsc = portsc;
+        tmp_portsc.port_enable = 0;
+        tmp_portsc.connect_status_change = 0;
+        tmp_portsc.port_enable = 0;
+        tmp_portsc.warm_port_reset_change = 0;
+        tmp_portsc.over_current_change = 0;
+        tmp_portsc.port_reset_change = 0;
+        tmp_portsc.port_link_state_change = 0;
+        tmp_portsc.port_config_err_change = 0;
+        return tmp_portsc;
+    }
 };

@@ -6,7 +6,7 @@ const context = @import("context.zig");
 const ring = @import("ring.zig");
 const trb = @import("trb.zig");
 
-pub fn initXhci() void {
+pub fn runXhci() void {
     const xhc: pci.Device = blk: for (pci.devices) |device| {
         const class_code = pci.readClassCode(device.bus, device.device, device.function);
         if (class_code.base == 0x0c and class_code.sub == 0x03 and class_code.interface == 0x30) {
@@ -24,6 +24,41 @@ pub fn initXhci() void {
     const usb_status: *volatile reg.OperationalReg.UsbStatusReg = &ope_reg.usb_status;
     const usb_cmd: *volatile reg.OperationalReg.UsbCmdReg = &ope_reg.usb_cmd;
 
+    initXhc(cap_reg, ope_reg, runtime_reg, usb_cmd, usb_status);
+
+    const portsc_base: u64 = @intFromPtr(ope_reg) + 0x400;
+    var connected_ports: [256]*volatile reg.PortscReg = undefined;
+    var connected_port_num: u8 = 0;
+
+    for (0..cap_reg.hcsparams1.max_ports) |i_port| {
+        const portsc: *volatile reg.PortscReg = @ptrFromInt(portsc_base + 0x10 * i_port);
+        if (portsc.current_connect_status == 0 and portsc.connect_status_change == 0) continue;
+
+        connected_ports[connected_port_num] = portsc;
+        connected_port_num += 1;
+    }
+
+    for (0..connected_port_num) |i_connected| {
+        connected_ports[i_connected].* = blk: {
+            var tmp_portsc = reg.PortscReg.writeZeroToRw1csBit(connected_ports[i_connected].*);
+            tmp_portsc.port_reset = 1;
+            tmp_portsc.connect_status_change = 1;
+            break :blk tmp_portsc;
+        };
+    }
+
+    for (0..connected_port_num) |i| {
+        while (connected_ports[i].port_reset == 1) asm volatile ("hlt");
+    }
+}
+
+fn initXhc(
+    cap_reg: *volatile reg.CapabilityReg,
+    ope_reg: *volatile reg.OperationalReg,
+    runtime_reg: *volatile reg.RuntimeReg,
+    usb_cmd: *volatile reg.OperationalReg.UsbCmdReg,
+    usb_status: *volatile reg.OperationalReg.UsbStatusReg,
+) void {
     while (usb_status.controller_not_ready == 1) asm volatile ("hlt");
 
     usb_cmd.run_stop = 0;
@@ -57,10 +92,10 @@ pub fn initXhci() void {
         },
     };
 
-    ring.prim_event_ring.int_reg_dequeue_ptr = @ptrCast(&runtime_reg.interrupt_reg_set1.event_ring_dequeue_ptr);
-    runtime_reg.interrupt_reg_set1.event_ring_segment_table_size = ring.event_ring_segment_table.len;
-    runtime_reg.interrupt_reg_set1.event_ring_dequeue_ptr = @intCast(@intFromPtr(&ring.prim_event_ring.trbs[0]) >> 4);
-    runtime_reg.interrupt_reg_set1.event_ring_segment_table_ptr = @intCast(@intFromPtr(&ring.event_ring_segment_table) >> 6);
+    ring.prim_event_ring.int_reg_dequeue_ptr = @ptrCast(&runtime_reg.interrupt_reg1.event_ring_dequeue_ptr);
+    runtime_reg.interrupt_reg1.event_ring_segment_table_size = ring.event_ring_segment_table.len;
+    runtime_reg.interrupt_reg1.event_ring_dequeue_ptr = @intCast(@intFromPtr(&ring.prim_event_ring.trbs[0]) >> 4);
+    runtime_reg.interrupt_reg1.event_ring_segment_table_ptr = @intCast(@intFromPtr(&ring.event_ring_segment_table) >> 6);
 
     usb_cmd.run_stop = 1;
     while (usb_status.host_controller_halted == 1) asm volatile ("hlt");

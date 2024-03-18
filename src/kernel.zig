@@ -32,7 +32,7 @@ fn kernelMain(frame_buf_conf: karg.FrameBufConf, memory_map: karg.MemoryMap) nor
     segment.configureSegment();
 
     pci.scanAllBuses();
-    xhci.initXhci();
+    xhci.runXhci();
 
     console.print("hlt");
     while (true) asm volatile ("hlt");
